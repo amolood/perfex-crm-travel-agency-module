@@ -106,6 +106,46 @@
     var COUNTRY_TO_GENDER = { M: 'M', F: 'F' };
 
     /**
+     * OCR very commonly miscounts a long run of identical '<' filler characters by one or two -
+     * both a human eye and Tesseract can merge or drop repeated identical glyphs, and TD3 lines
+     * have long filler runs by design (the personal-number field on line 2, name padding on
+     * line 1). A raw line that is off by a couple of characters from the required 44 is, in
+     * practice, almost always a filler-run miscount rather than genuinely missing/extra data -
+     * every fixed-position field before the trailing filler stays intact either way.
+     *
+     * This normalizes length by adjusting a trailing run of '<' specifically, rather than
+     * blindly padding/truncating from the very end of the string (which would corrupt the final
+     * check digit whenever the miscounted run isn't already the last thing on the line).
+     *
+     * @param  {string} line
+     * @return {string}  exactly 44 characters
+     */
+    function normalizeLineLength(line) {
+        if (line.length === 44) {
+            return line;
+        }
+
+        // Find the last run of '<' characters and the (possible) single trailing non-'<'
+        // character after it (line 2's final check digit sits right after the filler run).
+        var match = line.match(/(<+)([^<]?)$/);
+
+        if (!match) {
+            return line.padEnd(44, '<').substring(0, 44);
+        }
+
+        var fillerRun = match[1];
+        var trailer    = match[2] || '';
+        var beforeFillerLen = line.length - fillerRun.length - trailer.length;
+        var neededFillerLen = 44 - beforeFillerLen - trailer.length;
+
+        if (neededFillerLen < 0) {
+            return line.padEnd(44, '<').substring(0, 44);
+        }
+
+        return line.substring(0, beforeFillerLen) + '<'.repeat(neededFillerLen) + trailer;
+    }
+
+    /**
      * Parse two raw MRZ lines (already OCR'd / typed, uppercase, '<' as filler) into structured
      * passport fields.
      *
@@ -117,24 +157,18 @@
      *                        individual check digits actually validated.
      */
     function parseTD3(line1, line2) {
-        line1 = (line1 || '').toUpperCase().replace(/\s/g, '').padEnd(44, '<').substring(0, 44);
-        line2 = (line2 || '').toUpperCase().replace(/\s/g, '').padEnd(44, '<').substring(0, 44);
+        line1 = normalizeLineLength((line1 || '').toUpperCase().replace(/\s/g, ''));
+        line2 = normalizeLineLength((line2 || '').toUpperCase().replace(/\s/g, ''));
 
         if (line1.charAt(0) !== 'P' || line1.length !== 44 || line2.length !== 44) {
             return null;
         }
 
-        // Position 1 (the filler right after the document-type letter) is ALWAYS '<' in a
-        // valid TD3 line 1. OCR occasionally misreads this single filler character as a
-        // letter, which corrupts the issuing-country field - correcting that one position in
-        // place at least fixes issuingCountry, though it does not by itself guarantee the rest
-        // of line 1 (there is no ICAO check digit covering names/country, unlike line 2) was
-        // read correctly - see the confidence signal below.
-        if (line1.charAt(1) !== '<') {
-            line1 = line1.charAt(0) + '<' + line1.substring(2);
-        }
-
-        var nationality     = line1.substring(10, 13);
+        // The document-type field is positions 0-1 (2 characters) per ICAO 9303, not just a
+        // single 'P' followed by a filler - many issuers (Sudan among them) use a second letter
+        // here (e.g. "PC"), so position 1 is NOT reliably '<' and must not be force-corrected to
+        // one; doing so previously shifted the entire rest of line 1 and corrupted the issuing
+        // country, names, and nationality fields on exactly this kind of real-world document.
         var namesField      = line1.substring(5, 44);
         var nameParts       = namesField.split('<<');
         var surname         = cleanName(nameParts[0] || '');
@@ -142,6 +176,11 @@
 
         var passportNumber       = line2.substring(0, 9);
         var passportNumberCheck  = line2.charAt(9);
+        // Nationality is a line 2 field (position 10-13), immediately after the passport
+        // number's own check digit - it is NOT on line 1 (line 1's position 10-13 falls inside
+        // the names field). Reading it from line1 was a pre-existing bug that returned a
+        // fragment of the surname/given-names instead of the actual nationality code.
+        var nationality           = line2.substring(10, 13);
         var birthDateRaw         = line2.substring(13, 19);
         var birthDateCheck       = line2.charAt(19);
         var sex                  = line2.charAt(20);
@@ -194,6 +233,11 @@
      * @return {object|null}
      */
     function findAndParseMrz(ocrText) {
+        // Only require a plausible MRZ-shaped line (mostly A-Z/0-9/'<', long enough to be a
+        // TD3 line) here, rather than also requiring the first character to already be a
+        // literal 'P' - a single misread leading character (a stray mark, a '1' from nearby
+        // page noise, etc.) would otherwise drop line 1 entirely before parseTD3() ever gets a
+        // chance to run its own, more precise checks.
         var candidateLines = (ocrText || '')
             .toUpperCase()
             .split(/\r?\n/)
@@ -201,16 +245,18 @@
                 return line.replace(/[^A-Z0-9<]/g, '');
             })
             .filter(function (line) {
-                return line.length >= 30 && /^P[A-Z<]/.test(line) || (line.length >= 30 && /^[A-Z0-9<]{30,}$/.test(line));
+                return line.length >= 30 && /^[A-Z0-9<]+$/.test(line);
             });
 
+        // Try every adjacent pair, not just ones where the first line already starts with 'P' -
+        // parseTD3() itself is the authority on whether a given pair is actually a valid TD3
+        // MRZ (it re-checks the leading character, length, and structure); this loop's only job
+        // is to offer it plausible candidates.
         for (var i = 0; i < candidateLines.length - 1; i++) {
-            if (candidateLines[i].charAt(0) === 'P') {
-                var result = parseTD3(candidateLines[i], candidateLines[i + 1]);
+            var result = parseTD3(candidateLines[i], candidateLines[i + 1]);
 
-                if (result) {
-                    return result;
-                }
+            if (result) {
+                return result;
             }
         }
 
