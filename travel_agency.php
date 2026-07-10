@@ -30,6 +30,7 @@ define('TRAVEL_VISA_STATUS_APPROVED', 3);
 define('TRAVEL_VISA_STATUS_REJECTED', 4);
 
 define('TRAVEL_GROUP_MEMBERS_UPLOADS_FOLDER', FCPATH . 'uploads/travel_group_members/');
+define('TRAVEL_CLIENT_PASSPORTS_UPLOADS_FOLDER', FCPATH . 'uploads/travel_client_passports/');
 
 /**
  * Get the upload folder path for a group member's files (photo/passport scan)
@@ -44,30 +45,45 @@ function travel_agency_group_member_upload_path($member_id)
 }
 
 /**
- * Ensure the group-members uploads folder (which holds passport scans and personal photos)
- * denies direct web access, the same way every other Perfex uploads subfolder does.
+ * Get the upload folder path for a client's passport scans
+ *
+ * @param  mixed $clientid
+ *
+ * @return string
+ */
+function travel_agency_client_passport_upload_path($clientid)
+{
+    return TRAVEL_CLIENT_PASSPORTS_UPLOADS_FOLDER . $clientid . '/';
+}
+
+/**
+ * Ensure an uploads folder that holds passport scans/personal photos denies direct web access,
+ * the same way every other Perfex uploads subfolder does.
  *
  * _maybe_create_upload_path() (core helper) only writes an index.html to block directory
  * listing - it does not write a deny-all .htaccess like the folders under core Perfex do
  * (uploads/clients/, uploads/invoices/, etc.), so without this a file's exact URL could be
- * fetched directly with no authentication at all, bypassing the staff permission check in
- * view_group_member_file(). Called before every upload so it self-heals on installs where the
- * folder already existed without one, not just on fresh installs.
+ * fetched directly with no authentication at all, bypassing the staff/client ownership checks
+ * in the controllers that serve these files. Called before every upload so it self-heals on
+ * installs where the folder already existed without one, not just on fresh installs.
+ *
+ * @param  string $folder  absolute path, trailing slash
  *
  * @return void
  */
-function travel_agency_secure_group_member_uploads_folder()
+function travel_agency_secure_uploads_folder($folder)
 {
-    if (!file_exists(TRAVEL_GROUP_MEMBERS_UPLOADS_FOLDER)) {
-        mkdir(TRAVEL_GROUP_MEMBERS_UPLOADS_FOLDER, 0755, true);
+    if (!file_exists($folder)) {
+        mkdir($folder, 0755, true);
     }
 
-    $htaccess = TRAVEL_GROUP_MEMBERS_UPLOADS_FOLDER . '.htaccess';
+    $htaccess = $folder . '.htaccess';
 
     if (!file_exists($htaccess)) {
         file_put_contents($htaccess, "Order Deny,Allow\nDeny from all\n");
     }
 }
+
 
 /**
  * Determine a passport-expiry warning level relative to a group's departure date.
@@ -126,7 +142,8 @@ function travel_agency_module_activation_hook()
     $CI = &get_instance();
     require_once __DIR__ . '/install.php';
 
-    travel_agency_secure_group_member_uploads_folder();
+    travel_agency_secure_uploads_folder(TRAVEL_GROUP_MEMBERS_UPLOADS_FOLDER);
+    travel_agency_secure_uploads_folder(TRAVEL_CLIENT_PASSPORTS_UPLOADS_FOLDER);
 }
 
 /**
@@ -182,6 +199,16 @@ function travel_agency_module_init_menu_items()
             'position' => 12,
         ]);
 
+        if (staff_can('view', 'customers')) {
+            $CI->app_menu->add_sidebar_children_item('travel_agency', [
+                'slug'     => 'travel_agency-client-passports',
+                'name'     => _l('travel_agency_client_passports'),
+                'href'     => admin_url('travel_agency/client_passports'),
+                'icon'     => 'fa-solid fa-passport',
+                'position' => 13,
+            ]);
+        }
+
         if (staff_can('view', 'travel_agency_suppliers')) {
             $CI->app_menu->add_sidebar_children_item('travel_agency', [
                 'slug'     => 'travel_agency-suppliers',
@@ -217,6 +244,13 @@ function travel_agency_client_menu_item()
         'icon'     => 'fa-solid fa-plane',
         'href'     => site_url('travel_agency'),
         'position' => 60,
+    ]);
+
+    add_theme_menu_item('travel_agency_passport', [
+        'name'     => _l('travel_agency_my_passport'),
+        'icon'     => 'fa-solid fa-passport',
+        'href'     => site_url('travel_agency/passport'),
+        'position' => 61,
     ]);
 }
 

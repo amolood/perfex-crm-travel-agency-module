@@ -368,6 +368,30 @@ class Travel_groups_model extends App_Model
             if ($this->db->count_all_results(db_prefix() . 'travel_group_members') > 0) {
                 return 'invalid_booking';
             }
+
+            // The "Add Traveler" form only collects name/passport number/expiry - if the
+            // client behind this booking already has a passport on file (uploaded via their
+            // own portal or by staff on their profile), pull the richer MRZ-derived fields from
+            // it automatically instead of requiring staff to retype them for every trip. A
+            // staff member can still override any of these afterwards from the member's own
+            // Edit Details tab, which always takes precedence since it writes directly to this
+            // row - this is only a one-time convenience fill at creation.
+            $this->load->model('travel_agency/travel_client_passports_model');
+            $client_passport = $this->travel_client_passports_model->get_current($booking->clientid);
+
+            if ($client_passport) {
+                $data['passport_number']      = $data['passport_number'] != '' ? $data['passport_number'] : $client_passport['passport_number'];
+                // Falls back to the client's own already-SQL-format expiry only when nothing
+                // was posted; a posted value still goes through the single to_sql_date() pass
+                // below like every other date field in this model, so it's never converted twice.
+                $data['_fallback_passport_expiry'] = $client_passport['passport_expiry'];
+                $data['passport_surname']     = $client_passport['surname'];
+                $data['passport_given_names'] = $client_passport['given_names'];
+                $data['nationality']          = $client_passport['nationality'];
+                $data['date_of_birth']        = $client_passport['date_of_birth'];
+                $data['gender']               = $client_passport['gender'];
+                $data['passport_mrz_raw']     = $client_passport['mrz_raw'];
+            }
         }
 
         $lock_name = 'travel_agency_group_seats_' . (int) $group_id;
@@ -383,7 +407,10 @@ class Travel_groups_model extends App_Model
             }
 
             $data['visa_status']     = $data['visa_status'] == '' ? TRAVEL_VISA_STATUS_NOT_SUBMITTED : $data['visa_status'];
-            $data['passport_expiry'] = isset($data['passport_expiry']) && $data['passport_expiry'] != '' ? to_sql_date($data['passport_expiry']) : null;
+            $data['passport_expiry'] = isset($data['passport_expiry']) && $data['passport_expiry'] != ''
+                ? to_sql_date($data['passport_expiry'])
+                : (isset($data['_fallback_passport_expiry']) ? $data['_fallback_passport_expiry'] : null);
+            unset($data['_fallback_passport_expiry']);
             $data['datecreated']     = date('Y-m-d H:i:s');
 
             $this->db->insert(db_prefix() . 'travel_group_members', $data);

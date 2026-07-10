@@ -265,3 +265,36 @@ if (!$CI->db->table_exists(db_prefix() . 'travel_supplier_payments')) {
     $CI->db->query('ALTER TABLE `' . db_prefix() . 'travel_supplier_payments`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1');
 }
+
+/**
+ * Passports belong to the client, not to any single booking/group/trip - a client's passport is
+ * relevant to every trip they take, and they may renew it over time. Every upload/update inserts
+ * a NEW row rather than overwriting one, so old passports remain as permanent history; only one
+ * row per client is ever flagged is_current = 1 at a time.
+ */
+if (!$CI->db->table_exists(db_prefix() . 'travel_client_passports')) {
+    $CI->db->query('CREATE TABLE `' . db_prefix() . "travel_client_passports` (
+  `id` int(11) NOT NULL,
+  `clientid` int(11) NOT NULL,
+  `passport_number` varchar(100) NOT NULL DEFAULT '',
+  `surname` varchar(191) NOT NULL DEFAULT '',
+  `given_names` varchar(191) NOT NULL DEFAULT '',
+  `nationality` varchar(100) NOT NULL DEFAULT '',
+  `date_of_birth` date DEFAULT NULL,
+  `gender` varchar(10) NOT NULL DEFAULT '',
+  `passport_expiry` date DEFAULT NULL,
+  `scan_file` varchar(191) NOT NULL DEFAULT '',
+  `mrz_raw` text NOT NULL,
+  `is_current` tinyint(1) NOT NULL DEFAULT '1',
+  `datecreated` datetime NOT NULL,
+  `addedfrom` int(11) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=" . $CI->db->char_set . ';');
+
+    $CI->db->query('ALTER TABLE `' . db_prefix() . 'travel_client_passports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `clientid` (`clientid`),
+  ADD KEY `clientid_is_current` (`clientid`, `is_current`);');
+
+    $CI->db->query('ALTER TABLE `' . db_prefix() . 'travel_client_passports`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1');
+}

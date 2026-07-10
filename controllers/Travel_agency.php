@@ -13,6 +13,7 @@ class Travel_agency extends AdminController
         $this->load->model('travel_agency/travel_groups_model');
         $this->load->model('travel_agency/travel_package_types_model');
         $this->load->model('travel_agency/travel_supplier_payments_model');
+        $this->load->model('travel_agency/travel_client_passports_model');
         $this->load->model('currencies_model');
     }
 
@@ -589,7 +590,7 @@ class Travel_agency extends AdminController
 
             // Self-heals installs where the parent folder was created before this protection
             // existed - not just relying on the activation hook having run.
-            travel_agency_secure_group_member_uploads_folder();
+            travel_agency_secure_uploads_folder(TRAVEL_GROUP_MEMBERS_UPLOADS_FOLDER);
 
             $path = travel_agency_group_member_upload_path($id);
             _maybe_create_upload_path($path);
@@ -783,5 +784,147 @@ class Travel_agency extends AdminController
         }
 
         redirect(admin_url('travel_agency/supplier/' . $payment->supplier_id));
+    }
+
+    /* List clients, for staff to pick one and manage their passport records */
+    public function client_passports()
+    {
+        if (staff_cant('view', 'customers')) {
+            access_denied('customers');
+        }
+
+        if ($this->input->is_ajax_request()) {
+            $this->app->get_table_data(module_views_path('travel_agency', 'admin/client_passports/table'));
+
+            return;
+        }
+
+        $data['title'] = _l('travel_agency_client_passports');
+        $this->load->view('admin/client_passports/manage', $data);
+    }
+
+    /* View a client's current + historical passports, and upload a new one */
+    public function client_passport($clientid)
+    {
+        if (staff_cant('view', 'customers')) {
+            access_denied('customers');
+        }
+
+        $this->load->model('clients_model');
+        $client = $this->clients_model->get($clientid);
+
+        if (!$client) {
+            show_404();
+        }
+
+        if ($this->input->post()) {
+            if (staff_cant('edit', 'customers')) {
+                access_denied('customers');
+            }
+
+            $insert_id = $this->travel_client_passports_model->add($clientid, $this->input->post());
+
+            if ($insert_id) {
+                if (!empty($_FILES['passport_scan']['name'])) {
+                    $this->_handle_passport_scan_upload($insert_id, $clientid);
+                }
+
+                set_alert('success', _l('added_successfully', _l('travel_agency_client_passport')));
+            } else {
+                set_alert('danger', _l('problem_adding', _l('travel_agency_client_passport_lowercase')));
+            }
+
+            redirect(admin_url('travel_agency/client_passport/' . $clientid));
+        }
+
+        $data['client']     = $client;
+        $data['current']    = $this->travel_client_passports_model->get_current($clientid);
+        $data['history']    = $this->travel_client_passports_model->get_history($clientid);
+        $data['title']      = _l('travel_agency_client_passport') . ' - ' . $client->company;
+        $this->load->view('admin/client_passports/passport', $data);
+    }
+
+    /**
+     * Shared upload handler for a client passport scan - validates actual file content (not
+     * just the claimed extension), same as upload_group_member_file(), then records the
+     * filename against the given passport row.
+     * @param  mixed $passport_id
+     * @param  mixed $clientid
+     * @return void
+     */
+    private function _handle_passport_scan_upload($passport_id, $clientid)
+    {
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'pdf'];
+        $extension          = strtolower(pathinfo($_FILES['passport_scan']['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($extension, $allowed_extensions)) {
+            set_alert('warning', _l('file_php_extension_blocked'));
+
+            return;
+        }
+
+        $tmpPath = $_FILES['passport_scan']['tmp_name'];
+        $isValid = false;
+
+        if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
+            $imageInfo = @getimagesize($tmpPath);
+            $isValid   = $imageInfo !== false && in_array($imageInfo[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG]);
+        } elseif ($extension === 'pdf') {
+            $handle = @fopen($tmpPath, 'rb');
+            $header = $handle ? fread($handle, 5) : '';
+            if ($handle) {
+                fclose($handle);
+            }
+            $isValid = $header === '%PDF-';
+        }
+
+        if (!$isValid) {
+            set_alert('warning', _l('file_php_extension_blocked'));
+
+            return;
+        }
+
+        $max_size_bytes = 8 * 1024 * 1024;
+
+        if ($_FILES['passport_scan']['size'] > $max_size_bytes) {
+            set_alert('warning', _l('file_too_big'));
+
+            return;
+        }
+
+        travel_agency_secure_uploads_folder(TRAVEL_CLIENT_PASSPORTS_UPLOADS_FOLDER);
+
+        $path = travel_agency_client_passport_upload_path($clientid);
+        _maybe_create_upload_path($path);
+
+        $filename    = unique_filename($path, $_FILES['passport_scan']['name']);
+        $newFilePath = $path . $filename;
+
+        if (move_uploaded_file($tmpPath, $newFilePath)) {
+            $this->travel_client_passports_model->update_scan_file($passport_id, $clientid, $filename);
+        }
+    }
+
+    /* Serve a client passport scan file, gated by staff permission */
+    public function view_client_passport_file($passport_id)
+    {
+        if (staff_cant('view', 'customers')) {
+            access_denied('customers');
+        }
+
+        $passport = $this->travel_client_passports_model->get($passport_id);
+
+        if (!$passport || $passport->scan_file == '') {
+            show_404();
+        }
+
+        $path = travel_agency_client_passport_upload_path($passport->clientid) . $passport->scan_file;
+
+        if (!file_exists($path)) {
+            show_404();
+        }
+
+        $this->load->helper('download');
+        force_download($path, null);
     }
 }

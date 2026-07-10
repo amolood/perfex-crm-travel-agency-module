@@ -180,3 +180,26 @@ $lang['travel_agency_seats_remaining']          = 'المقاعد المتبقي
 $lang['travel_agency_submit_application']       = 'إرسال الطلب';
 $lang['travel_agency_application_submitted']    = 'تم إرسال طلبك بنجاح';
 $lang['travel_agency_application_failed']       = 'تعذر إرسال طلبك، الرجاء المحاولة مرة أخرى';
+$lang['travel_agency_my_passport']              = 'جواز سفري';
+$lang['travel_agency_client_passport_updated']  = 'تم تحديث بيانات جواز سفرك';
+$lang['travel_agency_client_passport_update_failed'] = 'تعذر تحديث بيانات جواز سفرك، الرجاء المحاولة مرة أخرى';
+
+/* بيانات جوازات العملاء (لوحة التحكم) */
+$lang['travel_agency_client_passports']         = 'جوازات العملاء';
+$lang['travel_agency_client_passport']          = 'جواز العميل';
+$lang['travel_agency_client_passport_lowercase'] = 'جواز العميل';
+$lang['travel_agency_client_passports_client']  = 'العميل';
+$lang['travel_agency_client_passports_passport_number'] = 'رقم الجواز';
+$lang['travel_agency_client_passports_expiry']  = 'تاريخ الانتهاء';
+$lang['travel_agency_client_passports_status']  = 'الحالة';
+$lang['travel_agency_client_passports_none_on_file'] = 'لا يوجد جواز مسجل';
+$lang['travel_agency_client_passports_expired'] = 'منتهي الصلاحية';
+$lang['travel_agency_client_passports_expiring_soon'] = 'قارب على الانتهاء';
+$lang['travel_agency_client_passports_valid']   = 'ساري';
+$lang['travel_agency_client_passports_current'] = 'الجواز الحالي';
+$lang['travel_agency_client_passports_superseded'] = 'مستبدل';
+$lang['travel_agency_client_passports_history'] = 'سجل الجوازات';
+$lang['travel_agency_client_passports_uploaded_on'] = 'تاريخ الرفع';
+$lang['travel_agency_client_passports_upload_new'] = 'رفع جواز جديد';
+$lang['travel_agency_client_passports_save_new'] = 'حفظ الجواز';
+$lang['travel_agency_client_passports_view_client_profile'] = 'عرض ملف العميل';

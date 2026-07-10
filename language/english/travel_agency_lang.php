@@ -178,3 +178,26 @@ $lang['travel_agency_seats_remaining']          = 'Seats Remaining';
 $lang['travel_agency_submit_application']       = 'Submit Application';
 $lang['travel_agency_application_submitted']    = 'Your application has been submitted successfully';
 $lang['travel_agency_application_failed']       = 'We were unable to submit your application, please try again';
+$lang['travel_agency_my_passport']              = 'My Passport';
+$lang['travel_agency_client_passport_updated']  = 'Your passport details have been updated';
+$lang['travel_agency_client_passport_update_failed'] = 'We were unable to update your passport details, please try again';
+
+/* Client passports (admin) */
+$lang['travel_agency_client_passports']         = 'Client Passports';
+$lang['travel_agency_client_passport']          = 'Client Passport';
+$lang['travel_agency_client_passport_lowercase'] = 'client passport';
+$lang['travel_agency_client_passports_client']  = 'Client';
+$lang['travel_agency_client_passports_passport_number'] = 'Passport Number';
+$lang['travel_agency_client_passports_expiry']  = 'Expiry';
+$lang['travel_agency_client_passports_status']  = 'Status';
+$lang['travel_agency_client_passports_none_on_file'] = 'No passport on file';
+$lang['travel_agency_client_passports_expired'] = 'Expired';
+$lang['travel_agency_client_passports_expiring_soon'] = 'Expiring Soon';
+$lang['travel_agency_client_passports_valid']   = 'Valid';
+$lang['travel_agency_client_passports_current'] = 'Current Passport';
+$lang['travel_agency_client_passports_superseded'] = 'Superseded';
+$lang['travel_agency_client_passports_history'] = 'Passport History';
+$lang['travel_agency_client_passports_uploaded_on'] = 'Uploaded On';
+$lang['travel_agency_client_passports_upload_new'] = 'Upload New Passport';
+$lang['travel_agency_client_passports_save_new'] = 'Save Passport';
+$lang['travel_agency_client_passports_view_client_profile'] = 'View Client Profile';
