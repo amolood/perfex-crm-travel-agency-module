@@ -20,15 +20,18 @@
             </tr>
             <tr>
                 <td class="bold"><?= _l('travel_agency_group_member_nationality'); ?></td>
-                <td><?= e($current['nationality']); ?></td>
+                <td><?= e(travel_agency_format_nationality($current['nationality'])); ?></td>
             </tr>
-            <?php if ($current['scan_file']) { ?>
             <tr>
-                <td class="bold"><?= _l('travel_agency_group_member_passport_tab'); ?></td>
-                <td><a href="<?= site_url('travel_agency/passport_file/' . $current['id']); ?>" target="_blank"><?= _l('travel_agency_group_member_view_passport_scan'); ?></a></td>
+                <td class="bold"><?= _l('travel_agency_group_member_gender'); ?></td>
+                <td><?= e(travel_agency_format_gender($current['gender'])); ?></td>
             </tr>
-            <?php } ?>
         </table>
+        <?php if ($current['scan_file']) { ?>
+        <div class="tw-mt-2">
+            <img src="<?= site_url('travel_agency/passport_file/' . $current['id']); ?>" class="img-responsive" style="max-width:420px;border:1px solid #e2e8f0;border-radius:6px;" alt="">
+        </div>
+        <?php } ?>
         <?php } else { ?>
         <p class="text-muted"><?= _l('travel_agency_client_passports_none_on_file'); ?></p>
         <?php } ?>
@@ -65,13 +68,28 @@
         </div>
         <div class="row">
             <div class="col-md-4">
-                <?= render_input('nationality', 'travel_agency_group_member_nationality'); ?>
+                <div class="form-group">
+                    <label class="control-label"><?= _l('travel_agency_group_member_nationality'); ?></label>
+                    <select name="nationality" id="my_passport_nationality" class="form-control">
+                        <option value=""></option>
+                        <?php foreach (travel_agency_nationality_names() as $code => $name) { ?>
+                        <option value="<?= e($code); ?>"><?= e($name); ?></option>
+                        <?php } ?>
+                    </select>
+                </div>
             </div>
             <div class="col-md-4">
                 <?= render_date_input('date_of_birth', 'travel_agency_group_member_date_of_birth'); ?>
             </div>
             <div class="col-md-4">
-                <?= render_input('gender', 'travel_agency_group_member_gender'); ?>
+                <div class="form-group">
+                    <label class="control-label"><?= _l('travel_agency_group_member_gender'); ?></label>
+                    <select name="gender" id="my_passport_gender" class="form-control">
+                        <option value=""></option>
+                        <option value="M"><?= _l('travel_agency_gender_male'); ?></option>
+                        <option value="F"><?= _l('travel_agency_gender_female'); ?></option>
+                    </select>
+                </div>
             </div>
         </div>
         <input type="hidden" name="mrz_raw" value="">
@@ -141,9 +159,9 @@ $(function() {
             var form = $('#my_passport_form');
             if (mrz.surname) { form.find('input[name="surname"]').val(mrz.surname); }
             if (mrz.givenNames) { form.find('input[name="given_names"]').val(mrz.givenNames); }
-            if (mrz.nationality) { form.find('input[name="nationality"]').val(mrz.nationality); }
+            if (mrz.nationality) { form.find('select[name="nationality"]').val(mrz.nationality); }
             if (mrz.dateOfBirth) { form.find('input[name="date_of_birth"]').val(mrz.dateOfBirth); }
-            if (mrz.sex) { form.find('input[name="gender"]').val(mrz.sex); }
+            if (mrz.sex) { form.find('select[name="gender"]').val(mrz.sex); }
             if (mrz.passportNumber) { form.find('input[name="passport_number"]').val(mrz.passportNumber); }
             if (mrz.passportExpiry) { form.find('input[name="passport_expiry"]').val(mrz.passportExpiry); }
             form.find('input[name="mrz_raw"]').val(mrz.rawLine1 + '\n' + mrz.rawLine2);

@@ -924,8 +924,11 @@ class Travel_agency extends AdminController
             show_404();
         }
 
-        $this->load->helper('download');
-        force_download($path, null);
+        // Served inline (not as a forced download) so it can be embedded directly as an <img>
+        // in the admin passport screen - core's force_download() always sends
+        // Content-Disposition: attachment, which would make an <img> tag fail to render and
+        // instead prompt a download on every page load.
+        travel_agency_serve_file_inline($path);
     }
 
     /* Delete a client's passport record (and its scan file, if any) */

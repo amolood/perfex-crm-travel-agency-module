@@ -117,6 +117,117 @@ function travel_agency_passport_expiry_warning_class($passport_expiry, $departur
     return '';
 }
 
+/**
+ * Serve a file inline (Content-Disposition: inline) so a browser renders it directly instead of
+ * downloading it - used for embedding passport scan images as <img> tags. Core's
+ * force_download() (system/helpers/download_helper.php) always sends
+ * Content-Disposition: attachment with no inline option, so this is implemented directly rather
+ * than modifying that vendor/core helper.
+ *
+ * @param  string $path  absolute filesystem path, already validated by the caller
+ *
+ * @return void
+ */
+function travel_agency_serve_file_inline($path)
+{
+    $mime = @mime_content_type($path);
+
+    if (!$mime) {
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mime      = $extension === 'pdf' ? 'application/pdf' : 'application/octet-stream';
+    }
+
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . filesize($path));
+    header('Content-Disposition: inline; filename="' . basename($path) . '"');
+    header('Cache-Control: private, max-age=0, must-revalidate');
+    readfile($path);
+    exit;
+}
+
+/**
+ * ISO-3166-1 alpha-3 code -> Arabic country name, for displaying the nationality read from a
+ * passport's MRZ (which only ever contains the 3-letter code, e.g. "SDN") in a human-readable
+ * form. Not exhaustive - covers Sudan and the nationalities this system is realistically likely
+ * to see; any code not in this list falls back to showing the raw code as-is rather than
+ * failing, since an unlisted code is still meaningful information even untranslated.
+ *
+ * @return array
+ */
+function travel_agency_nationality_names()
+{
+    return [
+        'SDN' => 'السودان',
+        'EGY' => 'مصر',
+        'SAU' => 'السعودية',
+        'ARE' => 'الإمارات',
+        'QAT' => 'قطر',
+        'KWT' => 'الكويت',
+        'BHR' => 'البحرين',
+        'OMN' => 'عُمان',
+        'JOR' => 'الأردن',
+        'LBN' => 'لبنان',
+        'SYR' => 'سوريا',
+        'IRQ' => 'العراق',
+        'YEM' => 'اليمن',
+        'LBY' => 'ليبيا',
+        'TUN' => 'تونس',
+        'DZA' => 'الجزائر',
+        'MAR' => 'المغرب',
+        'SOM' => 'الصومال',
+        'ERI' => 'إريتريا',
+        'ETH' => 'إثيوبيا',
+        'TCD' => 'تشاد',
+        'SSD' => 'جنوب السودان',
+        'TUR' => 'تركيا',
+        'PAK' => 'باكستان',
+        'IND' => 'الهند',
+        'GBR' => 'المملكة المتحدة',
+        'USA' => 'الولايات المتحدة',
+        'CAN' => 'كندا',
+        'DEU' => 'ألمانيا',
+        'FRA' => 'فرنسا',
+    ];
+}
+
+/**
+ * Human-readable nationality label from an MRZ-style ISO alpha-3 code, e.g. "SDN" -> "السودان".
+ * Falls back to the raw code itself when it isn't in travel_agency_nationality_names().
+ *
+ * @param  string $code
+ *
+ * @return string
+ */
+function travel_agency_format_nationality($code)
+{
+    $code  = mb_strtoupper(trim((string) $code));
+    $names = travel_agency_nationality_names();
+
+    return $code !== '' ? ($names[$code] ?? $code) : '';
+}
+
+/**
+ * Human-readable gender label from an MRZ-style single-letter code ('M'/'F').
+ *
+ * @param  string $code
+ *
+ * @return string
+ */
+function travel_agency_format_gender($code)
+{
+    $code = mb_strtoupper(trim((string) $code));
+
+    if ($code === 'M') {
+        return _l('travel_agency_gender_male');
+    }
+
+    if ($code === 'F') {
+        return _l('travel_agency_gender_female');
+    }
+
+    return $code;
+}
+
 hooks()->add_action('admin_init', 'travel_agency_module_init_menu_items');
 hooks()->add_action('admin_init', 'travel_agency_permissions');
 hooks()->add_action('app_init', 'travel_agency_client_menu_item');

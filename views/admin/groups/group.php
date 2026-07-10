@@ -265,16 +265,28 @@
                                             </div>
                                             <div class="row">
                                                 <div class="col-md-4">
-                                                    <?php echo render_input('nationality', 'travel_agency_group_member_nationality'); ?>
+                                                    <?php
+                                                    $nationality_options = [];
+                                                    foreach (travel_agency_nationality_names() as $code => $name) {
+                                                        $nationality_options[] = ['id' => $code, 'name' => $name];
+                                                    }
+                                                    echo render_select('nationality', $nationality_options, ['id', 'name'], 'travel_agency_group_member_nationality', '', ['data-none-selected-text' => _l('dropdown_non_selected_tex')]);
+                                                    ?>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <?php echo render_date_input('date_of_birth', 'travel_agency_group_member_date_of_birth'); ?>
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <?php echo render_input('gender', 'travel_agency_group_member_gender'); ?>
+                                                    <?php
+                                                    $gender_options = [
+                                                        ['id' => 'M', 'name' => _l('travel_agency_gender_male')],
+                                                        ['id' => 'F', 'name' => _l('travel_agency_gender_female')],
+                                                    ];
+                                                    echo render_select('gender', $gender_options, ['id', 'name'], 'travel_agency_group_member_gender', '', ['data-none-selected-text' => _l('dropdown_non_selected_tex')]);
+                                                    ?>
                                                 </div>
                                             </div>
-                                            <?php echo render_textarea('passport_mrz_raw', 'travel_agency_group_member_mrz_raw'); ?>
+                                            <input type="hidden" name="passport_mrz_raw" id="edit_member_mrz_raw">
                                             <?php echo render_textarea('notes', 'travel_agency_group_member_notes'); ?>
                                         </form>
                                     </div>
@@ -392,10 +404,10 @@ function edit_group_member_details(member) {
     detailsForm.find('input[name="passport_expiry"]').val(member.passport_expiry);
     detailsForm.find('input[name="passport_surname"]').val(member.passport_surname);
     detailsForm.find('input[name="passport_given_names"]').val(member.passport_given_names);
-    detailsForm.find('input[name="nationality"]').val(member.nationality);
+    detailsForm.find('select[name="nationality"]').val(member.nationality).selectpicker('refresh');
     detailsForm.find('input[name="date_of_birth"]').val(member.date_of_birth);
-    detailsForm.find('input[name="gender"]').val(member.gender);
-    detailsForm.find('textarea[name="passport_mrz_raw"]').val(member.passport_mrz_raw);
+    detailsForm.find('select[name="gender"]').val(member.gender).selectpicker('refresh');
+    detailsForm.find('input[name="passport_mrz_raw"]').val(member.passport_mrz_raw);
     detailsForm.find('textarea[name="notes"]').val(member.notes);
 
     $('#member_photo_upload_form').attr('action', '<?php echo admin_url('travel_agency/upload_group_member_file'); ?>/' + member.id + '/<?php echo isset($group) ? $group->id : ''; ?>/photo');
@@ -447,13 +459,13 @@ function travel_agency_run_passport_ocr(file) {
             detailsForm.find('input[name="passport_given_names"]').val(mrz.givenNames);
         }
         if (mrz.nationality) {
-            detailsForm.find('input[name="nationality"]').val(mrz.nationality);
+            detailsForm.find('select[name="nationality"]').val(mrz.nationality).selectpicker('refresh');
         }
         if (mrz.dateOfBirth) {
             detailsForm.find('input[name="date_of_birth"]').val(mrz.dateOfBirth);
         }
         if (mrz.sex) {
-            detailsForm.find('input[name="gender"]').val(mrz.sex);
+            detailsForm.find('select[name="gender"]').val(mrz.sex).selectpicker('refresh');
         }
         if (mrz.passportNumber) {
             detailsForm.find('input[name="passport_number"]').val(mrz.passportNumber);
@@ -461,7 +473,7 @@ function travel_agency_run_passport_ocr(file) {
         if (mrz.passportExpiry) {
             detailsForm.find('input[name="passport_expiry"]').val(mrz.passportExpiry);
         }
-        detailsForm.find('textarea[name="passport_mrz_raw"]').val(mrz.rawLine1 + '\n' + mrz.rawLine2);
+        detailsForm.find('input[name="passport_mrz_raw"]').val(mrz.rawLine1 + '\n' + mrz.rawLine2);
 
         if (mrz.confidence === 'high') {
             statusEl.removeClass('alert-info').addClass('alert-success')

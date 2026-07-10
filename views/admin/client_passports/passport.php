@@ -17,16 +17,19 @@
                         <div class="row">
                             <div class="col-md-4"><strong><?php echo _l('travel_agency_group_member_passport_number'); ?>:</strong> <?php echo e($current['passport_number']); ?></div>
                             <div class="col-md-4"><strong><?php echo _l('travel_agency_group_member_passport_expiry'); ?>:</strong> <?php echo $current['passport_expiry'] ? e(_d($current['passport_expiry'])) : ''; ?></div>
-                            <div class="col-md-4"><strong><?php echo _l('travel_agency_group_member_nationality'); ?>:</strong> <?php echo e($current['nationality']); ?></div>
+                            <div class="col-md-4"><strong><?php echo _l('travel_agency_group_member_nationality'); ?>:</strong> <?php echo e(travel_agency_format_nationality($current['nationality'])); ?></div>
                         </div>
                         <div class="row tw-mt-2">
                             <div class="col-md-4"><strong><?php echo _l('travel_agency_group_member_passport_surname'); ?>:</strong> <?php echo e($current['surname']); ?></div>
                             <div class="col-md-4"><strong><?php echo _l('travel_agency_group_member_passport_given_names'); ?>:</strong> <?php echo e($current['given_names']); ?></div>
                             <div class="col-md-4"><strong><?php echo _l('travel_agency_group_member_date_of_birth'); ?>:</strong> <?php echo $current['date_of_birth'] ? e(_d($current['date_of_birth'])) : ''; ?></div>
                         </div>
+                        <div class="row tw-mt-2">
+                            <div class="col-md-4"><strong><?php echo _l('travel_agency_group_member_gender'); ?>:</strong> <?php echo e(travel_agency_format_gender($current['gender'])); ?></div>
+                        </div>
                         <?php if ($current['scan_file']) { ?>
                         <div class="tw-mt-2">
-                            <a href="<?php echo admin_url('travel_agency/view_client_passport_file/' . $current['id']); ?>" target="_blank"><?php echo _l('travel_agency_group_member_view_passport_scan'); ?></a>
+                            <img src="<?php echo admin_url('travel_agency/view_client_passport_file/' . $current['id']); ?>" class="img-responsive" style="max-width:420px;border:1px solid #e2e8f0;border-radius:6px;" alt="">
                         </div>
                         <?php } ?>
                         <?php } else { ?>
@@ -66,16 +69,28 @@
                         </div>
                         <div class="row">
                             <div class="col-md-4">
-                                <?php echo render_input('nationality', 'travel_agency_group_member_nationality'); ?>
+                                <?php
+                                $nationality_options = [];
+                                foreach (travel_agency_nationality_names() as $code => $name) {
+                                    $nationality_options[] = ['id' => $code, 'name' => $name];
+                                }
+                                echo render_select('nationality', $nationality_options, ['id', 'name'], 'travel_agency_group_member_nationality', '', ['data-none-selected-text' => _l('dropdown_non_selected_tex')]);
+                                ?>
                             </div>
                             <div class="col-md-4">
                                 <?php echo render_date_input('date_of_birth', 'travel_agency_group_member_date_of_birth'); ?>
                             </div>
                             <div class="col-md-4">
-                                <?php echo render_input('gender', 'travel_agency_group_member_gender'); ?>
+                                <?php
+                                $gender_options = [
+                                    ['id' => 'M', 'name' => _l('travel_agency_gender_male')],
+                                    ['id' => 'F', 'name' => _l('travel_agency_gender_female')],
+                                ];
+                                echo render_select('gender', $gender_options, ['id', 'name'], 'travel_agency_group_member_gender', '', ['data-none-selected-text' => _l('dropdown_non_selected_tex')]);
+                                ?>
                             </div>
                         </div>
-                        <?php echo render_textarea('mrz_raw', 'travel_agency_group_member_mrz_raw'); ?>
+                        <input type="hidden" name="mrz_raw" id="client_passport_mrz_raw">
 
                         <button type="submit" class="btn btn-primary"><?php echo _l('travel_agency_client_passports_save_new'); ?></button>
                         <?php echo form_close(); ?>
@@ -164,12 +179,12 @@ $(function() {
             var form = $('#client_passport_form');
             if (mrz.surname) { form.find('input[name="surname"]').val(mrz.surname); }
             if (mrz.givenNames) { form.find('input[name="given_names"]').val(mrz.givenNames); }
-            if (mrz.nationality) { form.find('input[name="nationality"]').val(mrz.nationality); }
+            if (mrz.nationality) { form.find('select[name="nationality"]').val(mrz.nationality).selectpicker('refresh'); }
             if (mrz.dateOfBirth) { form.find('input[name="date_of_birth"]').val(mrz.dateOfBirth); }
-            if (mrz.sex) { form.find('input[name="gender"]').val(mrz.sex); }
+            if (mrz.sex) { form.find('select[name="gender"]').val(mrz.sex).selectpicker('refresh'); }
             if (mrz.passportNumber) { form.find('input[name="passport_number"]').val(mrz.passportNumber); }
             if (mrz.passportExpiry) { form.find('input[name="passport_expiry"]').val(mrz.passportExpiry); }
-            form.find('textarea[name="mrz_raw"]').val(mrz.rawLine1 + '\n' + mrz.rawLine2);
+            form.find('input[name="mrz_raw"]').val(mrz.rawLine1 + '\n' + mrz.rawLine2);
 
             if (mrz.confidence === 'high') {
                 statusEl.removeClass('alert-info').addClass('alert-success')

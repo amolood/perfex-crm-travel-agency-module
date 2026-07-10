@@ -126,6 +126,8 @@ $lang['travel_agency_group_member_passport_given_names'] = 'Passport Given Names
 $lang['travel_agency_group_member_nationality']     = 'Nationality';
 $lang['travel_agency_group_member_date_of_birth']   = 'Date of Birth';
 $lang['travel_agency_group_member_gender']          = 'Gender';
+$lang['travel_agency_gender_male']                  = 'Male';
+$lang['travel_agency_gender_female']                = 'Female';
 $lang['travel_agency_group_member_mrz_raw']          = 'MRZ Text';
 $lang['travel_agency_group_member_notes']           = 'Notes';
 

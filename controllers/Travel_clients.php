@@ -163,8 +163,8 @@ class Travel_clients extends ClientsController
             show_404();
         }
 
-        $this->load->helper('download');
-        force_download($path, null);
+        // Served inline so it can be embedded directly as an <img> on the "My Passport" page.
+        travel_agency_serve_file_inline($path);
     }
 
     /* Delete one of the logged-in client's own passport records - never another client's */
