@@ -420,7 +420,17 @@ function edit_group_member_details(member) {
     }
 
     if (member.passport_scan) {
-        $('#member_passport_scan_preview').html('<a href="<?php echo admin_url('travel_agency/view_group_member_file'); ?>/' + member.id + '/<?php echo isset($group) ? $group->id : ''; ?>/passport_scan" target="_blank"><?php echo _l('travel_agency_group_member_view_passport_scan'); ?></a>');
+        var scanUrl = '<?php echo admin_url('travel_agency/view_group_member_file'); ?>/' + member.id + '/<?php echo isset($group) ? $group->id : ''; ?>/passport_scan';
+
+        if (/\.(jpe?g|png)$/i.test(member.passport_scan)) {
+            $('#member_passport_scan_preview').html(
+                '<div class="tw-text-center"><a href="' + scanUrl + '" data-lightbox="member-passport-scan-' + member.id + '">' +
+                '<img src="' + scanUrl + '" class="img-responsive" style="max-width:320px;max-height:320px;border:1px solid #e2e8f0;border-radius:6px;margin:0 auto;cursor:zoom-in;" alt=""></a></div>'
+            );
+        } else {
+            // PDFs can't be shown as an <img> / lightbox - keep the plain link for those.
+            $('#member_passport_scan_preview').html('<a href="' + scanUrl + '" target="_blank"><?php echo _l('travel_agency_group_member_view_passport_scan'); ?></a>');
+        }
     } else {
         $('#member_passport_scan_preview').html('');
     }

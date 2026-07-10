@@ -630,8 +630,9 @@ class Travel_agency extends AdminController
             show_404();
         }
 
-        $this->load->helper('download');
-        force_download($path, null);
+        // Served inline so it can be embedded directly (photo thumbnail, or a lightbox-viewable
+        // passport scan) instead of always forcing a download.
+        travel_agency_serve_file_inline($path);
     }
 
     /* ---------------------------------------------------------------- */

@@ -28,9 +28,21 @@
                             <div class="col-md-4"><strong><?php echo _l('travel_agency_group_member_gender'); ?>:</strong> <?php echo e(travel_agency_format_gender($current['gender'])); ?></div>
                         </div>
                         <?php if ($current['scan_file']) { ?>
-                        <div class="tw-mt-2">
-                            <img src="<?php echo admin_url('travel_agency/view_client_passport_file/' . $current['id']); ?>" class="img-responsive" style="max-width:420px;border:1px solid #e2e8f0;border-radius:6px;" alt="">
+                        <?php
+                        $scan_url    = admin_url('travel_agency/view_client_passport_file/' . $current['id']);
+                        $scan_is_img = in_array(strtolower(pathinfo($current['scan_file'], PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']);
+                        ?>
+                        <?php if ($scan_is_img) { ?>
+                        <div class="tw-mt-3 tw-text-center">
+                            <a href="<?php echo $scan_url; ?>" data-lightbox="client-passport-<?php echo $current['id']; ?>" data-title="<?php echo e($client->company); ?>">
+                                <img src="<?php echo $scan_url; ?>" class="img-responsive" style="max-width:420px;max-height:420px;border:1px solid #e2e8f0;border-radius:6px;margin:0 auto;cursor:zoom-in;" alt="">
+                            </a>
                         </div>
+                        <?php } else { ?>
+                        <div class="tw-mt-2">
+                            <a href="<?php echo $scan_url; ?>" target="_blank"><?php echo _l('travel_agency_group_member_view_passport_scan'); ?></a>
+                        </div>
+                        <?php } ?>
                         <?php } ?>
                         <?php } else { ?>
                         <p class="text-muted"><?php echo _l('travel_agency_client_passports_none_on_file'); ?></p>
