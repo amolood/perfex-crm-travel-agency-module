@@ -91,6 +91,7 @@
                     <th><?= _l('travel_agency_group_member_passport_number'); ?></th>
                     <th><?= _l('travel_agency_group_member_passport_expiry'); ?></th>
                     <th><?= _l('travel_agency_client_passports_uploaded_on'); ?></th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -99,6 +100,9 @@
                     <td><?= e($passport['passport_number']); ?></td>
                     <td><?= $passport['passport_expiry'] ? e(_d($passport['passport_expiry'])) : ''; ?></td>
                     <td><?= e(_dt($passport['datecreated'])); ?></td>
+                    <td>
+                        <a href="<?= site_url('travel_agency/delete_passport/' . $passport['id']); ?>" class="text-danger" onclick="return confirm('<?= addslashes(_l('travel_agency_client_passports_confirm_delete')); ?>');"><?= _l('delete'); ?></a>
+                    </td>
                 </tr>
                 <?php } ?>
             </tbody>

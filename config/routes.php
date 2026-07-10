@@ -8,3 +8,4 @@ $route['travel_agency/packages']             = 'travel_clients/packages';
 $route['travel_agency/apply/(:num)']         = 'travel_clients/apply/$1';
 $route['travel_agency/passport']             = 'travel_clients/passport';
 $route['travel_agency/passport_file/(:num)'] = 'travel_clients/passport_file/$1';
+$route['travel_agency/delete_passport/(:num)'] = 'travel_clients/delete_passport/$1';

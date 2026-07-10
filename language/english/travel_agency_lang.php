@@ -117,7 +117,7 @@ $lang['travel_agency_group_member_passport_tab']    = 'Passport Scan';
 $lang['travel_agency_group_member_passport_scan_hint'] = 'Upload a scan/photo of the passport page containing the MRZ (machine-readable zone). The passport details below will be auto-filled from it - please review before saving.';
 $lang['travel_agency_group_member_view_passport_scan'] = 'View uploaded passport scan';
 $lang['travel_agency_group_member_passport_ocr_scanning']      = 'Reading passport details, please wait...';
-$lang['travel_agency_group_member_passport_ocr_success']       = 'Passport details read successfully. Please review the Details tab before saving.';
+$lang['travel_agency_group_member_passport_ocr_success']       = 'Passport number, birth date and expiry were read and verified. The name and nationality fields cannot be automatically verified - please check them carefully against the passport before saving.';
 $lang['travel_agency_group_member_passport_ocr_low_confidence'] = 'Passport details were partially read. Please carefully review and correct the Details tab before saving.';
 $lang['travel_agency_group_member_passport_ocr_not_found']      = 'Could not find a readable passport MRZ in this image. Please enter the details manually.';
 $lang['travel_agency_group_member_passport_ocr_error']          = 'Passport scanning failed. Please enter the details manually.';
@@ -181,6 +181,9 @@ $lang['travel_agency_application_failed']       = 'We were unable to submit your
 $lang['travel_agency_my_passport']              = 'My Passport';
 $lang['travel_agency_client_passport_updated']  = 'Your passport details have been updated';
 $lang['travel_agency_client_passport_update_failed'] = 'We were unable to update your passport details, please try again';
+$lang['travel_agency_client_passport_deleted']  = 'The passport record has been deleted';
+$lang['travel_agency_client_passport_delete_failed'] = 'We were unable to delete this passport record, please try again';
+$lang['travel_agency_client_passports_confirm_delete'] = 'Are you sure you want to delete this passport record? This cannot be undone.';
 
 /* Client passports (admin) */
 $lang['travel_agency_client_passports']         = 'Client Passports';

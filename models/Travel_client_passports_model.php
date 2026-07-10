@@ -100,4 +100,57 @@ class Travel_client_passports_model extends App_Model
 
         return $this->db->affected_rows() > 0;
     }
+
+    /**
+     * Delete a passport record - e.g. one uploaded by mistake, a duplicate, or a genuinely
+     * unwanted historical entry. $clientid is enforced in the WHERE clause so a passport id
+     * can't be deleted under a mismatched client id.
+     *
+     * If the deleted row was the client's current passport, the next most recent remaining
+     * record (if any) is promoted to current, so the client doesn't appear to have no passport
+     * on file when older history still exists.
+     * @param  mixed $id
+     * @param  mixed $clientid
+     * @return boolean
+     */
+    public function delete($id, $clientid)
+    {
+        $passport = $this->get($id);
+
+        if (!$passport || (int) $passport->clientid !== (int) $clientid) {
+            return false;
+        }
+
+        if ($passport->scan_file != '') {
+            $path = travel_agency_client_passport_upload_path($clientid) . $passport->scan_file;
+
+            if (file_exists($path)) {
+                @unlink($path);
+            }
+        }
+
+        $this->db->where('id', $id);
+        $this->db->where('clientid', $clientid);
+        $this->db->delete(db_prefix() . 'travel_client_passports');
+
+        if ($this->db->affected_rows() === 0) {
+            return false;
+        }
+
+        if ((int) $passport->is_current === 1) {
+            $this->db->where('clientid', $clientid);
+            $this->db->order_by('id', 'desc');
+            $this->db->limit(1);
+            $next = $this->db->get(db_prefix() . 'travel_client_passports')->row();
+
+            if ($next) {
+                $this->db->where('id', $next->id);
+                $this->db->update(db_prefix() . 'travel_client_passports', ['is_current' => 1]);
+            }
+        }
+
+        log_activity('Passport Record Deleted [Client ID:' . $clientid . ', Passport ID:' . $id . ']');
+
+        return true;
+    }
 }

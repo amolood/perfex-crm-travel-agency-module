@@ -927,4 +927,29 @@ class Travel_agency extends AdminController
         $this->load->helper('download');
         force_download($path, null);
     }
+
+    /* Delete a client's passport record (and its scan file, if any) */
+    public function delete_client_passport($passport_id)
+    {
+        if (staff_cant('edit', 'customers')) {
+            access_denied('customers');
+        }
+
+        $passport = $this->travel_client_passports_model->get($passport_id);
+
+        if (!$passport) {
+            show_404();
+        }
+
+        $clientid = $passport->clientid;
+        $response = $this->travel_client_passports_model->delete($passport_id, $clientid);
+
+        if ($response == true) {
+            set_alert('success', _l('deleted', _l('travel_agency_client_passport')));
+        } else {
+            set_alert('warning', _l('problem_deleting', _l('travel_agency_client_passport_lowercase')));
+        }
+
+        redirect(admin_url('travel_agency/client_passport/' . $clientid));
+    }
 }

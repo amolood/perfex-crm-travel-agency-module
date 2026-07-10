@@ -124,6 +124,16 @@
             return null;
         }
 
+        // Position 1 (the filler right after the document-type letter) is ALWAYS '<' in a
+        // valid TD3 line 1. OCR occasionally misreads this single filler character as a
+        // letter, which corrupts the issuing-country field - correcting that one position in
+        // place at least fixes issuingCountry, though it does not by itself guarantee the rest
+        // of line 1 (there is no ICAO check digit covering names/country, unlike line 2) was
+        // read correctly - see the confidence signal below.
+        if (line1.charAt(1) !== '<') {
+            line1 = line1.charAt(0) + '<' + line1.substring(2);
+        }
+
         var nationality     = line1.substring(10, 13);
         var namesField      = line1.substring(5, 44);
         var nameParts       = namesField.split('<<');
@@ -163,6 +173,13 @@
             passportExpiry:    resolveMrzDate(expiryDateRaw, true),
             checksValid:       checksValid,
             confidence:        validCount >= 3 ? 'high' : (validCount >= 1 ? 'low' : 'none'),
+            // ICAO 9303 has no check digit covering line 1 at all (issuing country, surname,
+            // given names, nationality) - only line 2's passport number/birth date/expiry/
+            // composite are cryptographically verifiable. A "high" confidence score only means
+            // line 2 checked out; it says nothing about whether the name was read correctly, so
+            // the name fields must always be flagged for manual verification regardless of the
+            // overall confidence level.
+            namesVerifiable:   false,
             rawLine1:          line1,
             rawLine2:          line2,
         };

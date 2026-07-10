@@ -167,6 +167,27 @@ class Travel_clients extends ClientsController
         force_download($path, null);
     }
 
+    /* Delete one of the logged-in client's own passport records - never another client's */
+    public function delete_passport($passport_id)
+    {
+        $clientid = get_client_user_id();
+        $passport = $this->travel_client_passports_model->get($passport_id);
+
+        if (!$passport || $passport->clientid != $clientid) {
+            show_404();
+        }
+
+        $response = $this->travel_client_passports_model->delete($passport_id, $clientid);
+
+        if ($response == true) {
+            set_alert('success', _l('travel_agency_client_passport_deleted'));
+        } else {
+            set_alert('danger', _l('travel_agency_client_passport_delete_failed'));
+        }
+
+        redirect(site_url('travel_agency/passport'));
+    }
+
     /**
      * Shared upload handler for a client's own passport scan - validates actual file content
      * (not just the claimed extension), same as the admin-side handler.

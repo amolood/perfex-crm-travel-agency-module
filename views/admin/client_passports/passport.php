@@ -114,6 +114,9 @@
                                         <?php if ($passport['scan_file']) { ?>
                                         <a href="<?php echo admin_url('travel_agency/view_client_passport_file/' . $passport['id']); ?>" target="_blank"><?php echo _l('travel_agency_group_member_view_passport_scan'); ?></a>
                                         <?php } ?>
+                                        <?php if (staff_can('edit', 'customers')) { ?>
+                                        <a href="<?php echo admin_url('travel_agency/delete_client_passport/' . $passport['id']); ?>" class="text-danger _delete tw-ml-2"><?php echo _l('delete'); ?></a>
+                                        <?php } ?>
                                     </td>
                                 </tr>
                                 <?php } ?>
