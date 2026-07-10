@@ -290,6 +290,7 @@
                                         <form id="member_passport_scan_upload_form" action="" method="post" enctype="multipart/form-data">
                                             <input type="file" name="passport_scan" accept=".jpg,.jpeg,.png,.pdf">
                                         </form>
+                                        <div id="passport_ocr_status" class="tw-mt-2" style="display:none;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -306,6 +307,14 @@
     </div>
 </div>
 <?php init_tail(); ?>
+<?php if (isset($group)) { ?>
+<script>
+    var travel_agency_assets_base = <?php echo json_encode(module_dir_url('travel_agency', 'assets/')); ?>;
+</script>
+<script src="<?php echo module_dir_url('travel_agency', 'assets/js/mrz_parser.js'); ?>"></script>
+<script src="<?php echo module_dir_url('travel_agency', 'assets/js/vendor/tesseract/tesseract.min.js'); ?>"></script>
+<script src="<?php echo module_dir_url('travel_agency', 'assets/js/passport_ocr.js'); ?>"></script>
+<?php } ?>
 <script>
 $(function() {
     appValidateForm($('form').eq(0), {
@@ -363,7 +372,14 @@ $(function() {
     });
 
     $('#member_passport_scan_upload_form input[name="passport_scan"]').on('change', function() {
+        var fileInput = this;
+        var file      = fileInput.files && fileInput.files[0];
+
         $('#member_passport_scan_upload_form').submit();
+
+        if (file && /^image\/(jpeg|png)$/.test(file.type) && window.TravelAgencyPassportOcr) {
+            travel_agency_run_passport_ocr(file);
+        }
     });
     <?php } ?>
 });
@@ -398,6 +414,69 @@ function edit_group_member_details(member) {
     }
 
     $('#edit_group_member_modal').modal('show');
+}
+
+/**
+ * Run client-side MRZ OCR on a selected passport scan image and pre-fill the details tab's
+ * fields with the result. Nothing here saves automatically - staff still review the Details
+ * tab and click Submit themselves, same as if they'd typed the fields in by hand. This only
+ * exists to save typing on the common case; it deliberately never overwrites the raw MRZ upload
+ * itself, only the structured form fields.
+ * @param {File} file
+ */
+function travel_agency_run_passport_ocr(file) {
+    var statusEl = $('#passport_ocr_status');
+
+    statusEl.show().removeClass('alert-danger alert-warning alert-success').addClass('alert alert-info')
+        .html('<i class="fa-solid fa-spinner fa-spin tw-mr-1"></i> ' + '<?php echo _l('travel_agency_group_member_passport_ocr_scanning'); ?>');
+
+    window.TravelAgencyPassportOcr.scanPassportFile(file).then(function (mrz) {
+        if (!mrz) {
+            statusEl.removeClass('alert-info').addClass('alert-warning')
+                .html('<?php echo _l('travel_agency_group_member_passport_ocr_not_found'); ?>');
+
+            return;
+        }
+
+        var detailsForm = $('#edit_group_member_details_form');
+
+        if (mrz.surname) {
+            detailsForm.find('input[name="passport_surname"]').val(mrz.surname);
+        }
+        if (mrz.givenNames) {
+            detailsForm.find('input[name="passport_given_names"]').val(mrz.givenNames);
+        }
+        if (mrz.nationality) {
+            detailsForm.find('input[name="nationality"]').val(mrz.nationality);
+        }
+        if (mrz.dateOfBirth) {
+            detailsForm.find('input[name="date_of_birth"]').val(mrz.dateOfBirth);
+        }
+        if (mrz.sex) {
+            detailsForm.find('input[name="gender"]').val(mrz.sex);
+        }
+        if (mrz.passportNumber) {
+            detailsForm.find('input[name="passport_number"]').val(mrz.passportNumber);
+        }
+        if (mrz.passportExpiry) {
+            detailsForm.find('input[name="passport_expiry"]').val(mrz.passportExpiry);
+        }
+        detailsForm.find('textarea[name="passport_mrz_raw"]').val(mrz.rawLine1 + '\n' + mrz.rawLine2);
+
+        if (mrz.confidence === 'high') {
+            statusEl.removeClass('alert-info').addClass('alert-success')
+                .html('<i class="fa-solid fa-circle-check tw-mr-1"></i> ' + '<?php echo _l('travel_agency_group_member_passport_ocr_success'); ?>');
+        } else {
+            statusEl.removeClass('alert-info').addClass('alert-warning')
+                .html('<i class="fa-solid fa-triangle-exclamation tw-mr-1"></i> ' + '<?php echo _l('travel_agency_group_member_passport_ocr_low_confidence'); ?>');
+        }
+
+        // Surface the auto-filled data on the tab staff actually need to check next.
+        $('a[href="#member_details_tab"]').tab('show');
+    }).catch(function () {
+        statusEl.removeClass('alert-info').addClass('alert-danger')
+            .html('<?php echo _l('travel_agency_group_member_passport_ocr_error'); ?>');
+    });
 }
 
 function submit_group_member_edit_modal() {

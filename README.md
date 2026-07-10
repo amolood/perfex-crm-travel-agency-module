@@ -14,6 +14,7 @@ For a deep, feature-by-feature walkthrough in Arabic, see [FEATURES.ar.md](FEATU
 - **Packages** — destination, supplier, trip type, duration, dates, seat capacity, currency, sell price vs. supplier cost, with automatic per-seat profit/margin calculation.
 - **Bookings** — pick an existing client or quick-add a new one inline, automatic total calculation (price × travelers), optional one-click invoice generation tied to the booking, and status tracking (pending/confirmed/cancelled/completed).
 - **Groups (multi-traveler trips)** — multi-city itinerary stops, multiple transport legs, and a full traveler roster per group with passport number/expiry, visa status, MRZ-derived fields, and uploaded photo/passport-scan attachments.
+- **Automatic passport MRZ scanning** — selecting a passport scan image runs OCR entirely in the browser (self-hosted Tesseract.js, nothing uploaded for this step) and auto-fills the traveler's surname, given names, nationality, date of birth, sex, passport number, and expiry date from the machine-readable zone, with ICAO check-digit validation and a confidence indicator. Staff review and confirm before saving.
 - **Suppliers** — simple supplier directory (hotels, carriers, ticket agents...).
 - **Supplier accounts & payments** — a dedicated overview page showing what's owed to every supplier vs. what's been paid, per currency, plus per-supplier payment recording.
 - **Client portal** — clients can view their bookings, browse open/bookable packages, and submit self-service booking applications directly from their own portal.
@@ -27,7 +28,7 @@ For a deep, feature-by-feature walkthrough in Arabic, see [FEATURES.ar.md](FEATU
    modules/travel_agency/
    ```
 2. Log in to the admin panel and go to **Setup → Modules**.
-3. Activate the **Travel Agency** module. This runs the module's `install.php`, which creates the required database tables and seeds the default package types.
+3. Activate the **Travel Agency** module. This runs the module's `install.php`, which creates the required database tables, seeds the default package types, and secures the uploads folder used for traveler photos/passport scans.
 4. A new **Travel Agency** item appears in the admin sidebar.
 
 ## Permissions
@@ -52,6 +53,10 @@ Assign these under **Setup → Staff → [staff member] → Permissions** as nee
 | `travel_group_transport` | Per-group transport legs |
 | `travel_group_members` | Travelers within a group, with passport/visa/photo data |
 | `travel_supplier_payments` | Supplier payment records |
+
+## Passport OCR
+
+Passport MRZ auto-fill (`assets/js/mrz_parser.js`, `assets/js/passport_ocr.js`) runs entirely client-side using a self-hosted copy of [Tesseract.js](https://github.com/naptha/tesseract.js) (`assets/js/vendor/tesseract/`), so no passport image data is sent anywhere for the OCR step itself — only the saved scan is uploaded to your own server through the normal upload flow. No external CDN dependency is required at runtime.
 
 ## License
 
