@@ -699,7 +699,8 @@ class Travel_agency extends AdminController
             $this->app->get_table_data(module_views_path('travel_agency', 'admin/suppliers/table'));
         }
 
-        $data['title'] = _l('travel_agency_suppliers');
+        $data['title']          = _l('travel_agency_suppliers');
+        $data['supplier_types'] = $this->travel_suppliers_model->get_distinct_types();
         $this->load->view('admin/suppliers/manage', $data);
     }
 
@@ -764,6 +765,7 @@ class Travel_agency extends AdminController
             $data['account_summary'] = $this->travel_supplier_payments_model->get_account_summary($id);
             $data['payments']        = $this->travel_supplier_payments_model->get_for_supplier($id);
             $data['currencies']      = $this->currencies_model->get();
+            $data['linked_packages'] = $this->travel_packages_model->get('', ['supplier_id' => $id]);
 
             $title = _l('edit', _l('travel_agency_supplier_lowercase'));
         }

@@ -25,12 +25,6 @@
                             </div>
                         </div>
 
-                        <?php $value = (isset($supplier) ? $supplier->city : ''); ?>
-                        <?php echo render_input('city', 'travel_agency_supplier_city', $value); ?>
-
-                        <?php $value = (isset($supplier) ? $supplier->address : ''); ?>
-                        <?php echo render_textarea('address', 'travel_agency_supplier_address', $value); ?>
-
                         <?php $value = (isset($supplier) ? $supplier->notes : ''); ?>
                         <?php echo render_textarea('notes', 'travel_agency_supplier_notes', $value); ?>
 
@@ -48,6 +42,43 @@
                 <?php echo form_close(); ?>
 
                 <?php if (isset($supplier)) { ?>
+                <div class="panel_s" id="supplier-linked-packages">
+                    <div class="panel-body">
+                        <h4 class="tw-mt-0 tw-font-bold tw-text-base tw-text-neutral-700"><?php echo _l('travel_agency_supplier_linked_packages'); ?></h4>
+                        <?php if (empty($linked_packages)) { ?>
+                        <p class="text-muted"><?php echo _l('travel_agency_supplier_no_linked_packages'); ?></p>
+                        <?php } else { ?>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th><?php echo _l('travel_agency_package_name'); ?></th>
+                                    <th><?php echo _l('travel_agency_package_destination'); ?></th>
+                                    <th><?php echo _l('travel_agency_package_price'); ?></th>
+                                    <th><?php echo _l('travel_agency_active'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($linked_packages as $pkg) { ?>
+                                <tr>
+                                    <td><a href="<?php echo admin_url('travel_agency/package/' . $pkg['id']); ?>"><?php echo e($pkg['name']); ?></a></td>
+                                    <td><?php echo e($pkg['destination']); ?></td>
+                                    <td><?php $pkg_currency = $pkg['currency'] ? $this->currencies_model->get($pkg['currency']) : get_base_currency(); ?>
+                                        <?php echo e(app_format_money($pkg['price'], $pkg_currency)); ?></td>
+                                    <td>
+                                        <?php if ($pkg['active'] == 1) { ?>
+                                        <span class="label label-success"><?php echo _l('travel_agency_active'); ?></span>
+                                        <?php } else { ?>
+                                        <span class="label label-default"><?php echo _l('travel_agency_inactive'); ?></span>
+                                        <?php } ?>
+                                    </td>
+                                </tr>
+                                <?php } ?>
+                            </tbody>
+                        </table>
+                        <?php } ?>
+                    </div>
+                </div>
+
                 <div class="panel_s" id="supplier-account-summary">
                     <div class="panel-body">
                         <h4 class="tw-mt-0 tw-font-bold tw-text-base tw-text-neutral-700"><?php echo _l('travel_agency_supplier_account_summary'); ?></h4>

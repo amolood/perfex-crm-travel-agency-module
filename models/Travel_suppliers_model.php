@@ -28,6 +28,20 @@ class Travel_suppliers_model extends App_Model
     }
 
     /**
+     * Distinct, non-empty supplier types currently in use
+     * @return array
+     */
+    public function get_distinct_types()
+    {
+        $this->db->distinct();
+        $this->db->select('type');
+        $this->db->where('type !=', '');
+        $this->db->order_by('type', 'asc');
+
+        return $this->db->get(db_prefix() . 'travel_suppliers')->result_array();
+    }
+
+    /**
      * Add new supplier
      * @param  array $data
      * @return mixed  insert id, 'invalid_data' if name/phonenumber is blank, or false on failure

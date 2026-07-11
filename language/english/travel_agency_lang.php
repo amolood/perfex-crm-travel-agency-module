@@ -151,10 +151,11 @@ $lang['travel_agency_supplier_name']            = 'Name';
 $lang['travel_agency_supplier_type']            = 'Type';
 $lang['travel_agency_supplier_email']           = 'Email';
 $lang['travel_agency_supplier_phonenumber']     = 'Phone Number';
-$lang['travel_agency_supplier_city']            = 'City';
-$lang['travel_agency_supplier_address']         = 'Address';
 $lang['travel_agency_supplier_required_fields'] = 'Name and phone number are required';
 $lang['travel_agency_supplier_notes']           = 'Notes';
+$lang['travel_agency_supplier_linked_packages']    = 'Linked Packages';
+$lang['travel_agency_supplier_no_linked_packages'] = 'No packages linked to this supplier yet';
+$lang['travel_agency_all_types']                   = 'All Types';
 
 /* Supplier account / payments (حسابات المورد والسدادات) */
 $lang['travel_agency_supplier_account_summary'] = 'Account Summary';

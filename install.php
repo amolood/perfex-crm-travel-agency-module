@@ -9,9 +9,6 @@ if (!$CI->db->table_exists(db_prefix() . 'travel_suppliers')) {
   `type` varchar(100) NOT NULL DEFAULT '',
   `email` varchar(100) NOT NULL DEFAULT '',
   `phonenumber` varchar(45) NOT NULL DEFAULT '',
-  `address` text NOT NULL,
-  `city` varchar(100) NOT NULL DEFAULT '',
-  `country` int(11) NOT NULL DEFAULT '0',
   `notes` text NOT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '1',
   `datecreated` datetime NOT NULL,
@@ -307,4 +304,11 @@ if (!$CI->db->table_exists(db_prefix() . 'travel_client_passports')) {
 
     $CI->db->query('ALTER TABLE `' . db_prefix() . 'travel_client_passports`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1');
+}
+
+if (in_array('address', $CI->db->list_fields(db_prefix() . 'travel_suppliers'))) {
+    $CI->db->query('ALTER TABLE `' . db_prefix() . 'travel_suppliers`
+  DROP COLUMN `address`,
+  DROP COLUMN `city`,
+  DROP COLUMN `country`;');
 }

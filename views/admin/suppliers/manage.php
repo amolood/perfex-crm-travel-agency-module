@@ -14,6 +14,15 @@
                 <?php } ?>
                 <div class="panel_s">
                     <div class="panel-body panel-table-full">
+                        <div class="form-group tw-mb-3" style="max-width: 250px;">
+                            <label for="supplier-type-filter"><?php echo _l('travel_agency_supplier_type'); ?></label>
+                            <select id="supplier-type-filter" class="form-control select-picker">
+                                <option value=""><?php echo _l('travel_agency_all_types'); ?></option>
+                                <?php foreach ($supplier_types as $type) { ?>
+                                <option value="<?php echo e($type['type']); ?>"><?php echo e($type['type']); ?></option>
+                                <?php } ?>
+                            </select>
+                        </div>
                         <?php render_datatable([
                         _l('travel_agency_supplier_name'),
                         _l('travel_agency_supplier_type'),
@@ -30,7 +39,11 @@
 <?php init_tail(); ?>
 <script>
 $(function() {
-    initDataTable('.table-travel_agency_suppliers', window.location.href);
+    var travelSuppliersTable = initDataTable('.table-travel_agency_suppliers', window.location.href);
+
+    $('#supplier-type-filter').on('change', function() {
+        travelSuppliersTable.column(1).search(this.value).draw();
+    });
 });
 </script>
 </body>

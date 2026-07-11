@@ -153,10 +153,11 @@ $lang['travel_agency_supplier_name']            = 'الاسم';
 $lang['travel_agency_supplier_type']            = 'النوع';
 $lang['travel_agency_supplier_email']           = 'البريد الإلكتروني';
 $lang['travel_agency_supplier_phonenumber']     = 'رقم الهاتف';
-$lang['travel_agency_supplier_city']            = 'المدينة';
-$lang['travel_agency_supplier_address']         = 'العنوان';
 $lang['travel_agency_supplier_required_fields'] = 'الاسم ورقم الهاتف مطلوبان';
 $lang['travel_agency_supplier_notes']           = 'ملاحظات';
+$lang['travel_agency_supplier_linked_packages']    = 'الباقات المرتبطة';
+$lang['travel_agency_supplier_no_linked_packages'] = 'لا توجد باقات مرتبطة بهذا المورد بعد';
+$lang['travel_agency_all_types']                   = 'كل الأنواع';
 
 /* حسابات المورد والسدادات */
 $lang['travel_agency_supplier_account_summary'] = 'ملخص الحساب';
