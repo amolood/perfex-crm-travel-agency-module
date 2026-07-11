@@ -169,6 +169,8 @@ class Travel_bookings_model extends App_Model
                 if ($invoice_id) {
                     $this->db->where('id', $insert_id);
                     $this->db->update(db_prefix() . 'travel_bookings', ['invoiceid' => $invoice_id]);
+                } else {
+                    log_activity('Travel Booking Invoice Creation Failed [Booking ID:' . $insert_id . ']');
                 }
             }
 
@@ -199,7 +201,7 @@ class Travel_bookings_model extends App_Model
             'billing_city'   => '',
             'billing_state'  => '',
             'billing_zip'    => '',
-            'billing_country' => '',
+            'billing_country' => 0,
             'status'         => 1,
             'subtotal'       => $amount,
             'total'          => $amount,
