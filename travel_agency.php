@@ -55,7 +55,10 @@ function travel_agency_group_member_upload_path($member_id)
  */
 function travel_agency_document_upload_path($rel_type, $rel_id)
 {
-    return TRAVEL_DOCUMENTS_UPLOADS_FOLDER . $rel_type . '/' . $rel_id . '/';
+    // A single path segment, not $rel_type/$rel_id nested two levels deep - _maybe_create_upload_path()
+    // (core helper) only does a non-recursive mkdir(), so it can create just one new directory level
+    // under the already-existing TRAVEL_DOCUMENTS_UPLOADS_FOLDER at a time.
+    return TRAVEL_DOCUMENTS_UPLOADS_FOLDER . $rel_type . '_' . $rel_id . '/';
 }
 
 /**
