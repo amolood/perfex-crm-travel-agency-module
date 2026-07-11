@@ -511,7 +511,7 @@ class Travel_agency extends AdminController
             show_404();
         }
 
-        force_download($path, null);
+        travel_agency_serve_file_download($path);
     }
 
     public function delete_document($id)

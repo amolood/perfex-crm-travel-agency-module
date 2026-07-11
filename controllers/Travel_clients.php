@@ -235,7 +235,7 @@ class Travel_clients extends ClientsController
             show_404();
         }
 
-        force_download($path, null);
+        travel_agency_serve_file_download($path);
     }
 
     /* View own passport history and upload a new one, scoped strictly to the logged in client */

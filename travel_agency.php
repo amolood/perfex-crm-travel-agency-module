@@ -147,6 +147,32 @@ function travel_agency_passport_expiry_warning_class($passport_expiry, $departur
  */
 function travel_agency_serve_file_inline($path)
 {
+    travel_agency_serve_file($path, 'inline');
+}
+
+/**
+ * Force-download a file. Deliberately not using core's force_download() (system/helpers/
+ * download_helper.php) - it fatals with a 500 on this server's PHP version, and it's vendor code
+ * this project never edits. Shares the same header logic as travel_agency_serve_file_inline(),
+ * just with an attachment disposition instead of inline.
+ *
+ * @param  string $path  absolute filesystem path, already validated by the caller
+ *
+ * @return void
+ */
+function travel_agency_serve_file_download($path)
+{
+    travel_agency_serve_file($path, 'attachment');
+}
+
+/**
+ * @param  string $path         absolute filesystem path, already validated by the caller
+ * @param  string $disposition  'inline' or 'attachment'
+ *
+ * @return void
+ */
+function travel_agency_serve_file($path, $disposition)
+{
     $mime = @mime_content_type($path);
 
     if (!$mime) {
@@ -156,7 +182,7 @@ function travel_agency_serve_file_inline($path)
 
     header('Content-Type: ' . $mime);
     header('Content-Length: ' . filesize($path));
-    header('Content-Disposition: inline; filename="' . basename($path) . '"');
+    header('Content-Disposition: ' . $disposition . '; filename="' . basename($path) . '"');
     header('Cache-Control: private, max-age=0, must-revalidate');
     readfile($path);
     exit;
