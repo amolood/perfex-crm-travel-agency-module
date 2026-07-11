@@ -340,15 +340,52 @@ class Travel_bookings_model extends App_Model
 
         $this->db->where('id', $id);
         $this->db->update(db_prefix() . 'travel_bookings', [
-            'status'              => TRAVEL_BOOKING_STATUS_CANCELLED,
-            'cancellation_reason' => $reason,
-            'refund_amount'       => (float) $refund_amount,
-            'cancelled_at'        => date('Y-m-d H:i:s'),
-            'cancelled_by'        => get_staff_user_id(),
+            'status'                     => TRAVEL_BOOKING_STATUS_CANCELLED,
+            'cancellation_reason'        => $reason,
+            'refund_amount'              => (float) $refund_amount,
+            'cancelled_at'               => date('Y-m-d H:i:s'),
+            'cancelled_by'               => get_staff_user_id(),
+            'cancellation_requested_at'  => null,
+            'cancellation_request_notes' => null,
         ]);
 
         if ($this->db->affected_rows() > 0) {
             log_activity('Travel Booking Cancelled [ID:' . $id . ']');
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * A client asks staff to cancel their own booking - does not cancel it outright, just flags
+     * it for staff attention (staff still completes the actual cancellation with a reason/refund
+     * via cancel() above, same as any other cancellation).
+     * @param  mixed  $id
+     * @param  mixed  $clientid
+     * @param  string $notes
+     * @return mixed  true, false, or 'not_found'
+     */
+    public function request_cancellation($id, $clientid, $notes)
+    {
+        $this->db->where('id', $id);
+        $this->db->where('clientid', $clientid);
+        $this->db->where('status !=', TRAVEL_BOOKING_STATUS_CANCELLED);
+        $booking = $this->db->get(db_prefix() . 'travel_bookings')->row();
+
+        if (!$booking) {
+            return 'not_found';
+        }
+
+        $this->db->where('id', $id);
+        $this->db->update(db_prefix() . 'travel_bookings', [
+            'cancellation_requested_at'  => date('Y-m-d H:i:s'),
+            'cancellation_request_notes' => $notes,
+        ]);
+
+        if ($this->db->affected_rows() > 0) {
+            log_activity('Travel Booking Cancellation Requested By Client [ID:' . $id . ']');
 
             return true;
         }

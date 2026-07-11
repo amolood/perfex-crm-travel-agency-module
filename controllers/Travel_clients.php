@@ -102,13 +102,17 @@ class Travel_clients extends ClientsController
 
         if ($booking->invoiceid) {
             $this->load->model('invoices_model');
-            $invoice               = $this->invoices_model->get($booking->invoiceid);
-            $data['invoice_hash']  = $invoice ? $invoice->hash : '';
+            $invoice                  = $this->invoices_model->get($booking->invoiceid);
+            $data['invoice_hash']     = $invoice ? $invoice->hash : '';
+            $data['invoice_total_left'] = $invoice ? get_invoice_total_left_to_pay($invoice->id, $invoice->total) : null;
         }
 
         $this->load->model('currencies_model');
         $booking_currency       = $this->currencies_model->get($booking->package_currency);
         $data['booking_currency'] = $booking_currency ? $booking_currency : get_base_currency();
+
+        $this->load->model('travel_agency/travel_documents_model');
+        $data['documents'] = $this->travel_documents_model->get_for('booking', $id);
 
         $data['booking'] = $booking;
         $data['title']   = _l('travel_agency_itinerary');
@@ -116,6 +120,110 @@ class Travel_clients extends ClientsController
         $this->data($data);
         $this->view('client/itineraries/view');
         $this->layout();
+    }
+
+    /* Client requests staff to cancel their own booking - flags it, doesn't cancel outright */
+    public function request_cancellation($id)
+    {
+        $response = $this->travel_bookings_model->request_cancellation($id, get_client_user_id(), $this->input->post('notes'));
+
+        if ($response === true) {
+            set_alert('success', _l('travel_agency_cancellation_request_submitted'));
+        } elseif ($response === 'not_found') {
+            show_404();
+        } else {
+            set_alert('danger', _l('travel_agency_cancellation_request_failed'));
+        }
+
+        redirect(site_url('travel_agency/itinerary/' . $id));
+    }
+
+    /* Client uploads their own document (visa/ticket/etc) to their own booking */
+    public function upload_booking_document($id)
+    {
+        $booking = $this->travel_bookings_model->get($id);
+
+        if (!$booking || $booking->clientid != get_client_user_id()) {
+            show_404();
+        }
+
+        if (isset($_FILES['document']['name']) && $_FILES['document']['name'] != '') {
+            $allowed_extensions = ['jpg', 'jpeg', 'png', 'pdf'];
+            $extension          = strtolower(pathinfo($_FILES['document']['name'], PATHINFO_EXTENSION));
+
+            if (in_array($extension, $allowed_extensions)) {
+                $tmpPath = $_FILES['document']['tmp_name'];
+                $isValid = false;
+
+                if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
+                    $imageInfo = @getimagesize($tmpPath);
+                    $isValid   = $imageInfo !== false && in_array($imageInfo[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG]);
+                } elseif ($extension === 'pdf') {
+                    $handle = @fopen($tmpPath, 'rb');
+                    $header = $handle ? fread($handle, 5) : '';
+                    if ($handle) {
+                        fclose($handle);
+                    }
+                    $isValid = $header === '%PDF-';
+                }
+
+                $max_size_bytes = 8 * 1024 * 1024;
+
+                if ($isValid && $_FILES['document']['size'] <= $max_size_bytes) {
+                    travel_agency_secure_uploads_folder(TRAVEL_DOCUMENTS_UPLOADS_FOLDER);
+
+                    $path = travel_agency_document_upload_path('booking', $id);
+                    _maybe_create_upload_path($path);
+
+                    $filename    = unique_filename($path, $_FILES['document']['name']);
+                    $newFilePath = $path . $filename;
+
+                    if (move_uploaded_file($tmpPath, $newFilePath)) {
+                        $this->load->model('travel_agency/travel_documents_model');
+                        $this->travel_documents_model->add([
+                            'rel_type'      => 'booking',
+                            'rel_id'        => $id,
+                            'document_type' => $this->input->post('document_type'),
+                            'original_name' => $_FILES['document']['name'],
+                            'filename'      => $filename,
+                            'notes'         => $this->input->post('notes'),
+                        ]);
+                        set_alert('success', _l('travel_agency_document_uploaded'));
+                    }
+                } else {
+                    set_alert('warning', _l('file_php_extension_blocked'));
+                }
+            } else {
+                set_alert('warning', _l('file_php_extension_blocked'));
+            }
+        }
+
+        redirect(site_url('travel_agency/itinerary/' . $id));
+    }
+
+    /* Serve a document attached to the logged-in client's own booking - never another client's */
+    public function booking_document($doc_id)
+    {
+        $this->load->model('travel_agency/travel_documents_model');
+        $document = $this->travel_documents_model->get($doc_id);
+
+        if (!$document || $document->rel_type !== 'booking') {
+            show_404();
+        }
+
+        $booking = $this->travel_bookings_model->get($document->rel_id);
+
+        if (!$booking || $booking->clientid != get_client_user_id()) {
+            show_404();
+        }
+
+        $path = travel_agency_document_upload_path('booking', $document->rel_id) . $document->filename;
+
+        if (!file_exists($path)) {
+            show_404();
+        }
+
+        force_download($path, null);
     }
 
     /* View own passport history and upload a new one, scoped strictly to the logged in client */

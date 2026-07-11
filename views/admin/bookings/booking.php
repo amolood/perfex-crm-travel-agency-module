@@ -5,6 +5,17 @@
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
                 <h4 class="tw-mt-0 tw-font-bold tw-text-lg tw-text-neutral-700"><?php echo e($title); ?></h4>
+
+                <?php if (isset($booking) && !empty($booking->cancellation_requested_at)) { ?>
+                <div class="alert alert-warning">
+                    <strong><?php echo _l('travel_agency_booking_cancellation_requested_by_client'); ?></strong>
+                    <?php echo _d($booking->cancellation_requested_at); ?>
+                    <?php if ($booking->cancellation_request_notes) { ?>
+                    <p class="tw-mb-0 tw-mt-1"><?php echo e($booking->cancellation_request_notes); ?></p>
+                    <?php } ?>
+                </div>
+                <?php } ?>
+
                 <?php echo form_open($this->uri->uri_string()); ?>
                 <div class="panel_s">
                     <div class="panel-body">

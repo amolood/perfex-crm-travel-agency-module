@@ -87,6 +87,12 @@ if (!in_array('cancellation_reason', $CI->db->list_fields(db_prefix() . 'travel_
   ADD COLUMN `cancelled_by` int(11) NOT NULL DEFAULT 0;');
 }
 
+if (!in_array('cancellation_requested_at', $CI->db->list_fields(db_prefix() . 'travel_bookings'))) {
+    $CI->db->query('ALTER TABLE `' . db_prefix() . 'travel_bookings`
+  ADD COLUMN `cancellation_requested_at` datetime DEFAULT NULL,
+  ADD COLUMN `cancellation_request_notes` text DEFAULT NULL;');
+}
+
 if (!$CI->db->table_exists(db_prefix() . 'travel_groups')) {
     $CI->db->query('CREATE TABLE `' . db_prefix() . "travel_groups` (
   `id` int(11) NOT NULL,

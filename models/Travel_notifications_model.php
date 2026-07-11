@@ -34,6 +34,31 @@ class Travel_notifications_model extends App_Model
         $this->notify_at_risk_passports($staff);
         $this->notify_upcoming_departures($staff);
         $this->notify_overdue_invoices($staff);
+        $this->notify_cancellation_requests($staff);
+    }
+
+    /**
+     * Bookings where the client has requested cancellation but staff hasn't processed it yet
+     * (cancellation_requested_at set, status still not cancelled).
+     */
+    private function notify_cancellation_requests($staff)
+    {
+        $this->db->where('cancellation_requested_at IS NOT NULL');
+        $this->db->where('status !=', TRAVEL_BOOKING_STATUS_CANCELLED);
+        $bookings = $this->db->get(db_prefix() . 'travel_bookings')->result_array();
+
+        foreach ($bookings as $booking) {
+            foreach ($staff as $member) {
+                add_notification([
+                    'description'     => 'travel_agency_notification_cancellation_requested',
+                    'touserid'        => $member['staffid'],
+                    'fromcompany'     => 1,
+                    'fromuserid'      => 0,
+                    'link'            => 'travel_agency/booking/' . $booking['id'],
+                    'additional_data' => serialize([$booking['id']]),
+                ]);
+            }
+        }
     }
 
     /**
