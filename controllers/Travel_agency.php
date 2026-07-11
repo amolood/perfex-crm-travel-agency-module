@@ -726,17 +726,26 @@ class Travel_agency extends AdminController
                 if (staff_cant('create', 'travel_agency_suppliers')) {
                     access_denied('travel_agency_suppliers');
                 }
-                $id = $this->travel_suppliers_model->add($this->input->post());
-                if ($id) {
+                $new_id = $this->travel_suppliers_model->add($this->input->post());
+
+                if ($new_id === 'invalid_data') {
+                    set_alert('danger', _l('travel_agency_supplier_required_fields'));
+                    redirect(admin_url('travel_agency/supplier'));
+                }
+
+                if ($new_id) {
                     set_alert('success', _l('added_successfully', _l('travel_agency_supplier')));
-                    redirect(admin_url('travel_agency/supplier/' . $id));
+                    redirect(admin_url('travel_agency/supplier/' . $new_id));
                 }
             } else {
                 if (staff_cant('edit', 'travel_agency_suppliers')) {
                     access_denied('travel_agency_suppliers');
                 }
                 $success = $this->travel_suppliers_model->update($this->input->post(), $id);
-                if ($success) {
+
+                if ($success === 'invalid_data') {
+                    set_alert('danger', _l('travel_agency_supplier_required_fields'));
+                } elseif ($success) {
                     set_alert('success', _l('updated_successfully', _l('travel_agency_supplier')));
                 }
                 redirect(admin_url('travel_agency/supplier/' . $id));

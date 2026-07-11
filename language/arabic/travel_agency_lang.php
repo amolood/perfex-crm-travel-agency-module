@@ -155,6 +155,7 @@ $lang['travel_agency_supplier_email']           = 'البريد الإلكترو
 $lang['travel_agency_supplier_phonenumber']     = 'رقم الهاتف';
 $lang['travel_agency_supplier_city']            = 'المدينة';
 $lang['travel_agency_supplier_address']         = 'العنوان';
+$lang['travel_agency_supplier_required_fields'] = 'الاسم ورقم الهاتف مطلوبان';
 $lang['travel_agency_supplier_notes']           = 'ملاحظات';
 
 /* حسابات المورد والسدادات */

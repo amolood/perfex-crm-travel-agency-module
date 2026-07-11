@@ -153,6 +153,7 @@ $lang['travel_agency_supplier_email']           = 'Email';
 $lang['travel_agency_supplier_phonenumber']     = 'Phone Number';
 $lang['travel_agency_supplier_city']            = 'City';
 $lang['travel_agency_supplier_address']         = 'Address';
+$lang['travel_agency_supplier_required_fields'] = 'Name and phone number are required';
 $lang['travel_agency_supplier_notes']           = 'Notes';
 
 /* Supplier account / payments (حسابات المورد والسدادات) */

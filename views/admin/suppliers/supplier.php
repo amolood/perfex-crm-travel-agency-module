@@ -147,6 +147,7 @@
 $(function() {
     appValidateForm($('#supplier-form'), {
         name: 'required',
+        phonenumber: 'required',
     });
 });
 </script>

@@ -30,10 +30,17 @@ class Travel_suppliers_model extends App_Model
     /**
      * Add new supplier
      * @param  array $data
-     * @return mixed
+     * @return mixed  insert id, 'invalid_data' if name/phonenumber is blank, or false on failure
      */
     public function add($data)
     {
+        // Client-side validation (appValidateForm) can be bypassed by anyone submitting the
+        // form directly - name and phone number are the minimum needed to actually reach a
+        // supplier, so both are enforced here too, not just in the browser.
+        if (!$this->has_required_fields($data)) {
+            return 'invalid_data';
+        }
+
         $data['datecreated'] = date('Y-m-d H:i:s');
         $data['addedfrom']   = get_staff_user_id();
         $data['active']      = isset($data['active']) ? 1 : 0;
@@ -51,13 +58,27 @@ class Travel_suppliers_model extends App_Model
     }
 
     /**
+     * @param  array $data
+     * @return boolean
+     */
+    private function has_required_fields($data)
+    {
+        return isset($data['name']) && trim($data['name']) !== ''
+            && isset($data['phonenumber']) && trim($data['phonenumber']) !== '';
+    }
+
+    /**
      * Update supplier
      * @param  array $data
      * @param  mixed $id
-     * @return boolean
+     * @return mixed  true, 'invalid_data' if name/phonenumber is blank, or false on failure
      */
     public function update($data, $id)
     {
+        if (!$this->has_required_fields($data)) {
+            return 'invalid_data';
+        }
+
         $data['active'] = isset($data['active']) ? 1 : 0;
 
         $this->db->where('id', $id);
