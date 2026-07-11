@@ -111,6 +111,12 @@ $lang['travel_agency_group_no_members']             = 'لم تتم إضافة أ
 $lang['travel_agency_group_no_seats_available']     = 'وصل هذا الفوج للحد الأقصى لعدد المقاعد';
 $lang['travel_agency_group_invalid_booking']        = 'الحجز المحدد غير صالح لهذا الفوج';
 $lang['travel_agency_group_not_active']             = 'لا يمكن إضافة مسافرين لهذا الفوج بعد الآن';
+$lang['travel_agency_group_member_transfer']              = 'نقل إلى فوج آخر';
+$lang['travel_agency_group_member_transfer_to']           = 'النقل إلى';
+$lang['travel_agency_group_member_transferred']           = 'تم نقل المسافر بنجاح';
+$lang['travel_agency_group_member_transfer_failed']       = 'حدثت مشكلة أثناء نقل المسافر';
+$lang['travel_agency_group_member_transfer_different_package'] = 'يمكن نقل المسافر فقط إلى فوج آخر من نفس الباقة';
+$lang['travel_agency_group_member_transfer_note']         = 'تم النقل من فوج "%s" بتاريخ %s';
 $lang['travel_agency_group_member_passport_carryover_intro'] = 'ستُنقل أيضاً البيانات التالية من جواز هذا العميل المسجل:';
 
 $lang['travel_agency_group_member']                 = 'مسافر';

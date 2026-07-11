@@ -701,6 +701,24 @@ class Travel_groups_model extends App_Model
      * @param  mixed $group_id
      * @return boolean
      */
+    /**
+     * Other active groups of the same package a traveler could be transferred into.
+     * @param  mixed $group_id
+     * @param  mixed $package_id
+     * @return array
+     */
+    public function get_other_groups_for_package($group_id, $package_id)
+    {
+        $inactive_statuses = [TRAVEL_GROUP_STATUS_DEPARTED, TRAVEL_GROUP_STATUS_COMPLETED, TRAVEL_GROUP_STATUS_CANCELLED];
+
+        $this->db->where('package_id', $package_id);
+        $this->db->where('id !=', $group_id);
+        $this->db->where_not_in('status', $inactive_statuses);
+        $this->db->order_by('departure_date', 'asc');
+
+        return $this->db->get(db_prefix() . 'travel_groups')->result_array();
+    }
+
     public function remove_member($id, $group_id)
     {
         $this->db->where('id', $id);
@@ -708,5 +726,86 @@ class Travel_groups_model extends App_Model
         $this->db->delete(db_prefix() . 'travel_group_members');
 
         return $this->db->affected_rows() > 0;
+    }
+
+    /**
+     * Move a traveler from one group to another group of the SAME package (e.g. rescheduling to
+     * a later departure of the same trip). Both groups' seat locks are acquired in ascending id
+     * order so two simultaneous transfers crossing the same two groups can never deadlock, and
+     * the destination's seat capacity is re-checked under lock exactly like add_member() does.
+     * @param  mixed $member_id
+     * @param  mixed $from_group_id
+     * @param  mixed $to_group_id
+     * @return mixed true, false, or 'no_seats'/'different_package'/'not_found'
+     */
+    public function transfer_member($member_id, $from_group_id, $to_group_id)
+    {
+        if ((int) $from_group_id === (int) $to_group_id) {
+            return 'not_found';
+        }
+
+        $from_group = $this->get($from_group_id);
+        $to_group   = $this->get($to_group_id);
+
+        if (!$from_group || !$to_group) {
+            return 'not_found';
+        }
+
+        if ((int) $from_group->package_id !== (int) $to_group->package_id) {
+            return 'different_package';
+        }
+
+        $this->db->where('id', $member_id);
+        $this->db->where('group_id', $from_group_id);
+        $member = $this->db->get(db_prefix() . 'travel_group_members')->row();
+
+        if (!$member) {
+            return 'not_found';
+        }
+
+        $ids         = [(int) $from_group_id, (int) $to_group_id];
+        sort($ids);
+        $lock_names  = array_map(function ($id) {
+            return 'travel_agency_group_seats_' . $id;
+        }, $ids);
+
+        foreach ($lock_names as $lock_name) {
+            $acquired = $this->db->query('SELECT GET_LOCK(?, 10) AS locked', [$lock_name])->row();
+
+            if (!$acquired || (int) $acquired->locked !== 1) {
+                foreach ($lock_names as $release_name) {
+                    $this->db->query('SELECT RELEASE_LOCK(?)', [$release_name]);
+                }
+
+                return 'no_seats';
+            }
+        }
+
+        try {
+            if ($to_group->seats_total > 0 && $this->count_members($to_group_id) >= $to_group->seats_total) {
+                return 'no_seats';
+            }
+
+            $transfer_note = trim($member->notes) !== '' ? $member->notes . "\n" : '';
+            $transfer_note .= sprintf(_l('travel_agency_group_member_transfer_note'), $from_group->name, date('Y-m-d'));
+
+            $this->db->where('id', $member_id);
+            $this->db->update(db_prefix() . 'travel_group_members', [
+                'group_id' => $to_group_id,
+                'notes'    => $transfer_note,
+            ]);
+
+            if ($this->db->affected_rows() > 0) {
+                log_activity('Traveler Moved Between Travel Groups [Member ID:' . $member_id . ', From:' . $from_group_id . ', To:' . $to_group_id . ']');
+
+                return true;
+            }
+
+            return false;
+        } finally {
+            foreach ($lock_names as $release_name) {
+                $this->db->query('SELECT RELEASE_LOCK(?)', [$release_name]);
+            }
+        }
     }
 }

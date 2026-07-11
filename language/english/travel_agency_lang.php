@@ -109,6 +109,12 @@ $lang['travel_agency_group_no_members']             = 'No travelers added to thi
 $lang['travel_agency_group_no_seats_available']     = 'This group has reached its total seats capacity';
 $lang['travel_agency_group_invalid_booking']        = 'The selected booking is not valid for this group';
 $lang['travel_agency_group_not_active']             = 'Travelers can no longer be added to this group';
+$lang['travel_agency_group_member_transfer']              = 'Transfer to another group';
+$lang['travel_agency_group_member_transfer_to']           = 'Transfer to';
+$lang['travel_agency_group_member_transferred']           = 'Traveler transferred successfully';
+$lang['travel_agency_group_member_transfer_failed']       = 'Problem transferring the traveler';
+$lang['travel_agency_group_member_transfer_different_package'] = 'You can only transfer a traveler to another group of the same package';
+$lang['travel_agency_group_member_transfer_note']         = 'Transferred from group "%s" on %s';
 $lang['travel_agency_group_member_passport_carryover_intro'] = 'The following details will also be carried over from this client\'s passport on file:';
 
 $lang['travel_agency_group_member']                 = 'Traveler';

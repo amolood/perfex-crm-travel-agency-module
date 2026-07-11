@@ -429,9 +429,10 @@ class Travel_agency extends AdminController
                 show_404();
             }
 
-            $data['members']   = $this->travel_groups_model->get_members($id);
-            $data['stops']     = $this->travel_groups_model->get_itinerary_stops($id);
-            $data['transport'] = $this->travel_groups_model->get_transport($id);
+            $data['members']       = $this->travel_groups_model->get_members($id);
+            $data['stops']         = $this->travel_groups_model->get_itinerary_stops($id);
+            $data['transport']     = $this->travel_groups_model->get_transport($id);
+            $data['transfer_groups'] = $this->travel_groups_model->get_other_groups_for_package($id, $data['group']->package_id);
 
             $title = _l('edit', _l('travel_agency_group_lowercase'));
         }
@@ -606,6 +607,29 @@ class Travel_agency extends AdminController
             set_alert('success', _l('deleted', _l('travel_agency_group_member')));
         } else {
             set_alert('warning', _l('problem_deleting', _l('travel_agency_group_member_lowercase')));
+        }
+
+        redirect(admin_url('travel_agency/group/' . $group_id));
+    }
+
+    public function transfer_group_member($id, $group_id)
+    {
+        if (staff_cant('edit', 'travel_agency')) {
+            access_denied('travel_agency');
+        }
+
+        $to_group_id = $this->input->post('to_group_id');
+
+        $response = $this->travel_groups_model->transfer_member($id, $group_id, $to_group_id);
+
+        if ($response === true) {
+            set_alert('success', _l('travel_agency_group_member_transferred'));
+        } elseif ($response === 'no_seats') {
+            set_alert('danger', _l('travel_agency_booking_no_seats_available'));
+        } elseif ($response === 'different_package') {
+            set_alert('danger', _l('travel_agency_group_member_transfer_different_package'));
+        } else {
+            set_alert('warning', _l('travel_agency_group_member_transfer_failed'));
         }
 
         redirect(admin_url('travel_agency/group/' . $group_id));

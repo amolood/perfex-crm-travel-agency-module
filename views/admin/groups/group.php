@@ -185,6 +185,14 @@
                                                     </a>
                                                 </li>
                                                 <?php } ?>
+                                                <?php if (!empty($transfer_groups)) { ?>
+                                                <li role="separator" class="divider"></li>
+                                                <li>
+                                                    <a href="#" onclick="open_transfer_member_modal(<?php echo e($member['id']); ?>); return false;">
+                                                        <?php echo _l('travel_agency_group_member_transfer'); ?>
+                                                    </a>
+                                                </li>
+                                                <?php } ?>
                                                 <li role="separator" class="divider"></li>
                                                 <li>
                                                     <a href="<?php echo admin_url('travel_agency/remove_group_member/' . $member['id'] . '/' . $group->id); ?>" class="text-danger _delete">
@@ -318,6 +326,37 @@
                         </div>
                     </div>
                 </div>
+
+                <?php if (!empty($transfer_groups)) { ?>
+                <div class="modal fade" id="transfer_group_member_modal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <form id="transfer_group_member_form" action="" method="post">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                                    <h4 class="modal-title"><?php echo _l('travel_agency_group_member_transfer'); ?></h4>
+                                </div>
+                                <div class="modal-body">
+                                    <?php
+                                    $transfer_group_options = [];
+                                    foreach ($transfer_groups as $tgroup) {
+                                        $transfer_group_options[] = [
+                                            'id'   => $tgroup['id'],
+                                            'name' => $tgroup['name'] . ' (' . _d($tgroup['departure_date']) . ')',
+                                        ];
+                                    }
+                                    echo render_select('to_group_id', $transfer_group_options, ['id', 'name'], 'travel_agency_group_member_transfer_to', '', ['data-none-selected-text' => _l('dropdown_non_selected_tex')]);
+                                    ?>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo _l('close'); ?></button>
+                                    <button type="submit" class="btn btn-primary"><?php echo _l('travel_agency_group_member_transfer'); ?></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <?php } ?>
                 <?php } ?>
             </div>
         </div>
@@ -338,6 +377,12 @@ $(function() {
         name: 'required',
         package_id: 'required',
     });
+
+    <?php if (!empty($transfer_groups)) { ?>
+    appValidateForm($('#transfer_group_member_form'), {
+        to_group_id: 'required',
+    });
+    <?php } ?>
 
     var itineraryStopIndex = <?php echo count($stops); ?>;
     var transportRowIndex  = <?php echo count($transport); ?>;
@@ -467,6 +512,13 @@ $(function() {
     });
     <?php } ?>
 });
+
+function open_transfer_member_modal(member_id) {
+    var form = $('#transfer_group_member_form');
+    form.attr('action', '<?php echo admin_url('travel_agency/transfer_group_member'); ?>/' + member_id + '/<?php echo isset($group) ? $group->id : ''; ?>');
+    form.find('select[name="to_group_id"]').val('').selectpicker('refresh');
+    $('#transfer_group_member_modal').modal('show');
+}
 
 function edit_group_member_details(member) {
     var detailsForm = $('#edit_group_member_details_form');
