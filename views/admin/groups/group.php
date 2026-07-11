@@ -369,14 +369,56 @@ $(function() {
 
     <?php if (isset($group)) { ?>
     $('#add_group_member_modal').on('show.bs.modal', function() {
-        var select = $(this).find('select[name="booking_id"]');
-        select.html('<option value=""></option>');
+        var modal  = $(this);
+        var select = modal.find('select[name="booking_id"]');
+        select.html('<option value=""></option>').data('bookings', {});
+        modal.find('input[name="traveler_name"]').val('');
+        modal.find('input[name="passport_number"]').val('');
+        modal.find('input[name="passport_expiry"]').val('');
+
         $.get('<?php echo admin_url('travel_agency/get_eligible_group_bookings/' . $group->id); ?>', function(bookings) {
+            var bookingsById = {};
+
             $.each(bookings, function(i, booking) {
+                bookingsById[booking.id] = booking;
                 select.append('<option value="' + booking.id + '">' + booking.client_company + ' (#' + booking.id + ')</option>');
             });
-            select.selectpicker('refresh');
+
+            select.data('bookings', bookingsById).selectpicker('refresh');
         }, 'json');
+    });
+
+    // Auto-fill the traveler's name, passport number, and passport expiry from the selected
+    // booking's client the moment a booking is picked - the client's own passport record
+    // (surname + given names, as printed on the passport) takes priority over the CRM contact
+    // name, since that's what actually needs to match the travel document; falls back to the
+    // contact's CRM name only when the client has no passport on file yet. Staff can still edit
+    // any of these fields by hand afterwards before submitting.
+    $('#add_group_member_modal').on('change', 'select[name="booking_id"]', function() {
+        var modal    = $('#add_group_member_modal');
+        var bookings = $(this).data('bookings') || {};
+        var booking  = bookings[$(this).val()];
+
+        if (!booking) {
+            return;
+        }
+
+        var fullName = '';
+        if (booking.passport_surname || booking.passport_given_names) {
+            fullName = [booking.passport_given_names, booking.passport_surname].filter(Boolean).join(' ');
+        } else if (booking.contact_firstname || booking.contact_lastname) {
+            fullName = [booking.contact_firstname, booking.contact_lastname].filter(Boolean).join(' ');
+        }
+
+        if (fullName) {
+            modal.find('input[name="traveler_name"]').val(fullName);
+        }
+        if (booking.passport_number) {
+            modal.find('input[name="passport_number"]').val(booking.passport_number);
+        }
+        if (booking.passport_expiry) {
+            modal.find('input[name="passport_expiry"]').val(booking.passport_expiry);
+        }
     });
 
     $('#member_photo_upload_form input[name="photo"]').on('change', function() {

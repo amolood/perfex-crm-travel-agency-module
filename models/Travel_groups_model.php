@@ -308,16 +308,33 @@ class Travel_groups_model extends App_Model
     }
 
     /**
-     * Get bookings eligible to be added to a group (same package, not already a member)
+     * Get bookings eligible to be added to a group (same package, not already a member).
+     *
+     * Also returns each booking's client's primary contact name (fallback traveler name) and
+     * their current passport data if any is on file, so the "Add Traveler" form can auto-fill
+     * name/passport number/expiry the moment a booking is selected, instead of staff retyping
+     * data that's already recorded against the client.
+     *
      * @param  mixed $group_id
      * @param  mixed $package_id
      * @return array
      */
     public function get_eligible_bookings($group_id, $package_id)
     {
-        $this->db->select(db_prefix() . 'travel_bookings.*, ' . db_prefix() . 'clients.company as client_company')
+        $this->db->select(
+            db_prefix() . 'travel_bookings.*, '
+            . db_prefix() . 'clients.company as client_company, '
+            . db_prefix() . 'contacts.firstname as contact_firstname, '
+            . db_prefix() . 'contacts.lastname as contact_lastname, '
+            . 'passport.passport_number as passport_number, '
+            . 'passport.passport_expiry as passport_expiry, '
+            . 'passport.surname as passport_surname, '
+            . 'passport.given_names as passport_given_names'
+        )
             ->from(db_prefix() . 'travel_bookings')
             ->join(db_prefix() . 'clients', db_prefix() . 'clients.userid = ' . db_prefix() . 'travel_bookings.clientid', 'left')
+            ->join(db_prefix() . 'contacts', db_prefix() . 'contacts.userid = ' . db_prefix() . 'travel_bookings.clientid AND ' . db_prefix() . 'contacts.is_primary = 1', 'left')
+            ->join(db_prefix() . 'travel_client_passports passport', 'passport.clientid = ' . db_prefix() . 'travel_bookings.clientid AND passport.is_current = 1', 'left')
             ->where(db_prefix() . 'travel_bookings.package_id', $package_id)
             ->where('NOT EXISTS (SELECT 1 FROM ' . db_prefix() . 'travel_group_members WHERE ' . db_prefix() . 'travel_group_members.booking_id = ' . db_prefix() . 'travel_bookings.id AND ' . db_prefix() . 'travel_group_members.group_id = ' . intval($group_id) . ')', null, false);
 
