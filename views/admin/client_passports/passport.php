@@ -189,16 +189,20 @@ $(function() {
             }
 
             var form = $('#client_passport_form');
+            var nationalityMatched = true;
             if (mrz.surname) { form.find('input[name="surname"]').val(mrz.surname); }
             if (mrz.givenNames) { form.find('input[name="given_names"]').val(mrz.givenNames); }
-            if (mrz.nationality) { form.find('select[name="nationality"]').val(mrz.nationality).selectpicker('refresh'); }
+            if (mrz.nationality) { nationalityMatched = window.TravelAgencyPassportOcr.selectNationality(form.find('select[name="nationality"]'), mrz.nationality, true); }
             if (mrz.dateOfBirth) { form.find('input[name="date_of_birth"]').val(mrz.dateOfBirth); }
             if (mrz.sex) { form.find('select[name="gender"]').val(mrz.sex).selectpicker('refresh'); }
             if (mrz.passportNumber) { form.find('input[name="passport_number"]').val(mrz.passportNumber); }
             if (mrz.passportExpiry) { form.find('input[name="passport_expiry"]').val(mrz.passportExpiry); }
             form.find('input[name="mrz_raw"]').val(mrz.rawLine1 + '\n' + mrz.rawLine2);
 
-            if (mrz.confidence === 'high') {
+            if (!nationalityMatched) {
+                statusEl.removeClass('alert-info').addClass('alert-warning')
+                    .html('<i class="fa-solid fa-triangle-exclamation tw-mr-1"></i> ' + '<?php echo _l('travel_agency_group_member_passport_ocr_unlisted_nationality'); ?>');
+            } else if (mrz.confidence === 'high') {
                 statusEl.removeClass('alert-info').addClass('alert-success')
                     .html('<i class="fa-solid fa-circle-check tw-mr-1"></i> ' + '<?php echo _l('travel_agency_group_member_passport_ocr_success'); ?>');
             } else {

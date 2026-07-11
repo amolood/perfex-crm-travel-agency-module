@@ -232,6 +232,46 @@ hooks()->add_action('admin_init', 'travel_agency_module_init_menu_items');
 hooks()->add_action('admin_init', 'travel_agency_permissions');
 hooks()->add_action('app_init', 'travel_agency_client_menu_item');
 hooks()->add_filter('get_dashboard_widgets', 'travel_agency_add_dashboard_widget');
+hooks()->add_action('before_client_deleted', 'travel_agency_cleanup_client_data');
+
+/**
+ * Fired before a client is deleted from core CRM. Without this, travel_client_passports rows
+ * (PII with no FK constraint back to clients) and their scan files would be orphaned forever -
+ * unreachable by any UI (the admin list LEFT JOINs from clients, so a deleted client's row just
+ * disappears from view while the file/row rot on disk) - and their travel_bookings would keep
+ * counting against package seat capacity permanently, since get_booked_seats() only excludes
+ * cancelled bookings.
+ *
+ * Passports are deleted outright (PII should not survive client deletion). Bookings are kept as
+ * historical records but cancelled (frees the seat) and stamped with the client's name, matching
+ * core Perfex's own convention for other client-referencing tables (tblinvoices.deleted_customer_name
+ * etc.) - deleting them outright would risk leaving a dangling travel_group_members.booking_id
+ * with nothing behind it.
+ *
+ * @param  mixed $clientid
+ *
+ * @return void
+ */
+function travel_agency_cleanup_client_data($clientid)
+{
+    $CI = &get_instance();
+
+    $CI->load->model('travel_agency/travel_client_passports_model');
+    $passports = $CI->travel_client_passports_model->get_history($clientid);
+
+    foreach ($passports as $passport) {
+        $CI->travel_client_passports_model->delete($passport['id'], $clientid);
+    }
+
+    $company_name = get_company_name($clientid);
+
+    $CI->db->where('clientid', $clientid);
+    $CI->db->where('status !=', TRAVEL_BOOKING_STATUS_CANCELLED);
+    $CI->db->update(db_prefix() . 'travel_bookings', [
+        'status'                => TRAVEL_BOOKING_STATUS_CANCELLED,
+        'deleted_customer_name' => $company_name,
+    ]);
+}
 
 function travel_agency_add_dashboard_widget($widgets)
 {

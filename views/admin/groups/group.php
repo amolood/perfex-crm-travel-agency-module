@@ -220,6 +220,7 @@
                                 <?php echo render_input('traveler_name', 'travel_agency_group_member_traveler_name'); ?>
                                 <?php echo render_input('passport_number', 'travel_agency_group_member_passport_number'); ?>
                                 <?php echo render_date_input('passport_expiry', 'travel_agency_group_member_passport_expiry'); ?>
+                                <div id="add_member_passport_carryover" class="alert alert-info tw-mb-0" style="display:none;"></div>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo _l('close'); ?></button>
@@ -245,6 +246,10 @@
                                 </ul>
                                 <div class="tab-content tw-pt-4">
                                     <div role="tabpanel" class="tab-pane active" id="member_details_tab">
+                                        <a href="#" id="refresh_member_passport_link" class="tw-inline-flex tw-items-center tw-mb-3 _delete" style="display:none;">
+                                            <i class="fa-solid fa-rotate tw-mr-1"></i>
+                                            <?php echo _l('travel_agency_group_member_refresh_passport'); ?>
+                                        </a>
                                         <form id="edit_group_member_details_form" action="" method="post">
                                             <?php echo render_input('traveler_name', 'travel_agency_group_member_traveler_name'); ?>
                                             <div class="row">
@@ -375,6 +380,7 @@ $(function() {
         modal.find('input[name="traveler_name"]').val('');
         modal.find('input[name="passport_number"]').val('');
         modal.find('input[name="passport_expiry"]').val('');
+        modal.find('#add_member_passport_carryover').hide().html('');
 
         $.get('<?php echo admin_url('travel_agency/get_eligible_group_bookings/' . $group->id); ?>', function(bookings) {
             var bookingsById = {};
@@ -419,6 +425,30 @@ $(function() {
         if (booking.passport_expiry) {
             modal.find('input[name="passport_expiry"]').val(booking.passport_expiry);
         }
+
+        // add_member() also silently carries nationality/date of birth/gender over from the
+        // client's passport record server-side, without any of those fields being visible on
+        // this form - surface what will happen so staff aren't only finding out via "Edit
+        // Details" afterwards, particularly relevant if the client's on-file passport data
+        // turns out to be stale.
+        var carryoverParts = [];
+        if (booking.passport_nationality) {
+            carryoverParts.push('<?php echo _l('travel_agency_group_member_nationality'); ?>: ' + booking.passport_nationality);
+        }
+        if (booking.passport_date_of_birth) {
+            carryoverParts.push('<?php echo _l('travel_agency_group_member_date_of_birth'); ?>: ' + booking.passport_date_of_birth);
+        }
+        if (booking.passport_gender) {
+            var genderLabel = booking.passport_gender === 'M' ? '<?php echo _l('travel_agency_gender_male'); ?>' : (booking.passport_gender === 'F' ? '<?php echo _l('travel_agency_gender_female'); ?>' : booking.passport_gender);
+            carryoverParts.push('<?php echo _l('travel_agency_group_member_gender'); ?>: ' + genderLabel);
+        }
+
+        var carryoverBox = modal.find('#add_member_passport_carryover');
+        if (carryoverParts.length > 0) {
+            carryoverBox.html('<strong><?php echo _l('travel_agency_group_member_passport_carryover_intro'); ?></strong><br>' + carryoverParts.join(' &middot; ')).show();
+        } else {
+            carryoverBox.hide().html('');
+        }
     });
 
     $('#member_photo_upload_form input[name="photo"]').on('change', function() {
@@ -454,6 +484,13 @@ function edit_group_member_details(member) {
 
     $('#member_photo_upload_form').attr('action', '<?php echo admin_url('travel_agency/upload_group_member_file'); ?>/' + member.id + '/<?php echo isset($group) ? $group->id : ''; ?>/photo');
     $('#member_passport_scan_upload_form').attr('action', '<?php echo admin_url('travel_agency/upload_group_member_file'); ?>/' + member.id + '/<?php echo isset($group) ? $group->id : ''; ?>/passport_scan');
+
+    var refreshLink = $('#refresh_member_passport_link');
+    if (member.clientid) {
+        refreshLink.attr('href', '<?php echo admin_url('travel_agency/refresh_group_member_passport'); ?>/' + member.id + '/<?php echo isset($group) ? $group->id : ''; ?>').show();
+    } else {
+        refreshLink.hide();
+    }
 
     if (member.photo) {
         $('#member_photo_preview').html('<img src="<?php echo admin_url('travel_agency/view_group_member_file'); ?>/' + member.id + '/<?php echo isset($group) ? $group->id : ''; ?>/photo" class="tw-h-24 tw-w-24 tw-rounded-full tw-object-cover">');
@@ -503,6 +540,7 @@ function travel_agency_run_passport_ocr(file) {
         }
 
         var detailsForm = $('#edit_group_member_details_form');
+        var nationalityMatched = true;
 
         if (mrz.surname) {
             detailsForm.find('input[name="passport_surname"]').val(mrz.surname);
@@ -511,7 +549,7 @@ function travel_agency_run_passport_ocr(file) {
             detailsForm.find('input[name="passport_given_names"]').val(mrz.givenNames);
         }
         if (mrz.nationality) {
-            detailsForm.find('select[name="nationality"]').val(mrz.nationality).selectpicker('refresh');
+            nationalityMatched = window.TravelAgencyPassportOcr.selectNationality(detailsForm.find('select[name="nationality"]'), mrz.nationality, true);
         }
         if (mrz.dateOfBirth) {
             detailsForm.find('input[name="date_of_birth"]').val(mrz.dateOfBirth);
@@ -527,7 +565,10 @@ function travel_agency_run_passport_ocr(file) {
         }
         detailsForm.find('input[name="passport_mrz_raw"]').val(mrz.rawLine1 + '\n' + mrz.rawLine2);
 
-        if (mrz.confidence === 'high') {
+        if (!nationalityMatched) {
+            statusEl.removeClass('alert-info').addClass('alert-warning')
+                .html('<i class="fa-solid fa-triangle-exclamation tw-mr-1"></i> ' + '<?php echo _l('travel_agency_group_member_passport_ocr_unlisted_nationality'); ?>');
+        } else if (mrz.confidence === 'high') {
             statusEl.removeClass('alert-info').addClass('alert-success')
                 .html('<i class="fa-solid fa-circle-check tw-mr-1"></i> ' + '<?php echo _l('travel_agency_group_member_passport_ocr_success'); ?>');
         } else {

@@ -13,7 +13,17 @@ $sTable       = db_prefix() . 'clients';
 
 $join = ['LEFT JOIN ' . db_prefix() . 'travel_client_passports ON ' . db_prefix() . 'travel_client_passports.clientid = ' . db_prefix() . 'clients.userid AND ' . db_prefix() . 'travel_client_passports.is_current = 1'];
 
-$result = data_tables_init($aColumns, $sIndexColumn, $sTable, $join, [], [db_prefix() . 'clients.userid as id']);
+// Optional ?filter=expiring query param (see manage.php's toggle link) narrows the list down
+// to passports that are expired or expiring within 6 months, instead of staff having to
+// manually scan every row's status badge to spot the ones needing attention.
+$where = [];
+
+if ($this->input->get('filter') === 'expiring') {
+    $six_months_from_now = date('Y-m-d', strtotime('+6 months'));
+    $where[] = "AND " . db_prefix() . "travel_client_passports.passport_expiry IS NOT NULL AND " . db_prefix() . "travel_client_passports.passport_expiry <= '" . $six_months_from_now . "'";
+}
+
+$result = data_tables_init($aColumns, $sIndexColumn, $sTable, $join, $where, [db_prefix() . 'clients.userid as id']);
 
 $output  = $result['output'];
 $rResult = $result['rResult'];

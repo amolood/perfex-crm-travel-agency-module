@@ -57,10 +57,18 @@ class Travel_client_passports_model extends App_Model
      * this insert becomes the new current record.
      * @param  mixed $clientid
      * @param  array $data
-     * @return mixed  insert id, or false on failure
+     * @return mixed  insert id, 'invalid_passport_number' if it's blank, or false on failure
      */
     public function add($clientid, $data)
     {
+        // Client-side validation (appValidateForm) can be bypassed by anyone submitting the
+        // form directly - without this, a blank passport_number could still become a client's
+        // "current" passport record, silently superseding a real one and then propagating into
+        // any group member auto-filled from it.
+        if (!isset($data['passport_number']) || trim($data['passport_number']) === '') {
+            return 'invalid_passport_number';
+        }
+
         $data['clientid']        = (int) $clientid;
         $data['passport_expiry'] = isset($data['passport_expiry']) && $data['passport_expiry'] != '' ? to_sql_date($data['passport_expiry']) : null;
         $data['date_of_birth']   = isset($data['date_of_birth']) && $data['date_of_birth'] != '' ? to_sql_date($data['date_of_birth']) : null;

@@ -57,6 +57,9 @@ $has_content = count($upcoming_groups) > 0 || count($supplier_balances) > 0;
                     <div class="tw-px-1 tw-py-1.5 tw-flex tw-justify-between tw-items-center">
                         <div>
                             <a href="<?php echo admin_url('travel_agency/group/' . $group['id']); ?>" class="tw-font-medium"><?php echo e($group['name']); ?></a>
+                            <?php if (!empty($group['has_at_risk_passport'])) { ?>
+                            <i class="fa-solid fa-triangle-exclamation text-danger tw-ml-1" title="<?php echo _l('travel_agency_widget_at_risk_passport'); ?>"></i>
+                            <?php } ?>
                             <br>
                             <small class="text-muted"><?php echo e($group['package_destination']); ?> &middot; <?php echo e($group['members_count']); ?> <?php echo _l('travel_agency_group_members_count'); ?></small>
                         </div>

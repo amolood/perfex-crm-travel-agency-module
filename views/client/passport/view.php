@@ -80,28 +80,25 @@
         </div>
         <div class="row">
             <div class="col-md-4">
-                <div class="form-group">
-                    <label class="control-label"><?= _l('travel_agency_group_member_nationality'); ?></label>
-                    <select name="nationality" id="my_passport_nationality" class="form-control">
-                        <option value=""></option>
-                        <?php foreach (travel_agency_nationality_names() as $code => $name) { ?>
-                        <option value="<?= e($code); ?>"><?= e($name); ?></option>
-                        <?php } ?>
-                    </select>
-                </div>
+                <?php
+                $nationality_options = [];
+                foreach (travel_agency_nationality_names() as $code => $name) {
+                    $nationality_options[] = ['id' => $code, 'name' => $name];
+                }
+                echo render_select('nationality', $nationality_options, ['id', 'name'], 'travel_agency_group_member_nationality', '', ['data-none-selected-text' => _l('dropdown_non_selected_tex')]);
+                ?>
             </div>
             <div class="col-md-4">
                 <?= render_date_input('date_of_birth', 'travel_agency_group_member_date_of_birth'); ?>
             </div>
             <div class="col-md-4">
-                <div class="form-group">
-                    <label class="control-label"><?= _l('travel_agency_group_member_gender'); ?></label>
-                    <select name="gender" id="my_passport_gender" class="form-control">
-                        <option value=""></option>
-                        <option value="M"><?= _l('travel_agency_gender_male'); ?></option>
-                        <option value="F"><?= _l('travel_agency_gender_female'); ?></option>
-                    </select>
-                </div>
+                <?php
+                $gender_options = [
+                    ['id' => 'M', 'name' => _l('travel_agency_gender_male')],
+                    ['id' => 'F', 'name' => _l('travel_agency_gender_female')],
+                ];
+                echo render_select('gender', $gender_options, ['id', 'name'], 'travel_agency_group_member_gender', '', ['data-none-selected-text' => _l('dropdown_non_selected_tex')]);
+                ?>
             </div>
         </div>
         <input type="hidden" name="mrz_raw" value="">
@@ -131,7 +128,7 @@
                     <td><?= $passport['passport_expiry'] ? e(_d($passport['passport_expiry'])) : ''; ?></td>
                     <td><?= e(_dt($passport['datecreated'])); ?></td>
                     <td>
-                        <a href="<?= site_url('travel_agency/delete_passport/' . $passport['id']); ?>" class="text-danger" onclick="return confirm('<?= addslashes(_l('travel_agency_client_passports_confirm_delete')); ?>');"><?= _l('delete'); ?></a>
+                        <a href="<?= site_url('travel_agency/delete_passport/' . $passport['id']); ?>" class="text-danger _delete"><?= _l('delete'); ?></a>
                     </td>
                 </tr>
                 <?php } ?>
@@ -149,6 +146,10 @@
 <script src="<?= module_dir_url('travel_agency', 'assets/js/passport_ocr.js'); ?>"></script>
 <script>
 $(function() {
+    appValidateForm($('#my_passport_form'), {
+        passport_number: 'required',
+    });
+
     $('#my_passport_scan_input').on('change', function() {
         var file = this.files && this.files[0];
 
@@ -169,16 +170,20 @@ $(function() {
             }
 
             var form = $('#my_passport_form');
+            var nationalityMatched = true;
             if (mrz.surname) { form.find('input[name="surname"]').val(mrz.surname); }
             if (mrz.givenNames) { form.find('input[name="given_names"]').val(mrz.givenNames); }
-            if (mrz.nationality) { form.find('select[name="nationality"]').val(mrz.nationality); }
+            if (mrz.nationality) { nationalityMatched = window.TravelAgencyPassportOcr.selectNationality(form.find('select[name="nationality"]'), mrz.nationality, true); }
             if (mrz.dateOfBirth) { form.find('input[name="date_of_birth"]').val(mrz.dateOfBirth); }
-            if (mrz.sex) { form.find('select[name="gender"]').val(mrz.sex); }
+            if (mrz.sex) { form.find('select[name="gender"]').val(mrz.sex).selectpicker('refresh'); }
             if (mrz.passportNumber) { form.find('input[name="passport_number"]').val(mrz.passportNumber); }
             if (mrz.passportExpiry) { form.find('input[name="passport_expiry"]').val(mrz.passportExpiry); }
             form.find('input[name="mrz_raw"]').val(mrz.rawLine1 + '\n' + mrz.rawLine2);
 
-            if (mrz.confidence === 'high') {
+            if (!nationalityMatched) {
+                statusEl.removeClass('alert-info').addClass('alert-warning')
+                    .html('<i class="fa-solid fa-triangle-exclamation tw-mr-1"></i> ' + '<?= _l('travel_agency_group_member_passport_ocr_unlisted_nationality'); ?>');
+            } else if (mrz.confidence === 'high') {
                 statusEl.removeClass('alert-info').addClass('alert-success')
                     .html('<i class="fa-solid fa-circle-check tw-mr-1"></i> ' + '<?= _l('travel_agency_group_member_passport_ocr_success'); ?>');
             } else {

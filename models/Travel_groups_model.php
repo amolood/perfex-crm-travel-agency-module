@@ -63,9 +63,37 @@ class Travel_groups_model extends App_Model
 
         foreach ($groups as $key => $group) {
             $groups[$key]['members_count'] = $this->count_members($group['id']);
+
+            // Surfaces departures that need attention (an expired/soon-to-expire traveler
+            // passport) directly on the dashboard, instead of that only being visible by
+            // opening each group's roster page individually.
+            $groups[$key]['has_at_risk_passport'] = $this->has_at_risk_passport($group['id'], $group['departure_date']);
         }
 
         return $groups;
+    }
+
+    /**
+     * Whether any traveler in this group has an expired or soon-to-expire passport relative to
+     * the group's departure date - reuses the same warning logic already shown per-member on
+     * the group roster page (travel_agency_passport_expiry_warning_class()).
+     * @param  mixed  $group_id
+     * @param  string $departure_date
+     * @return boolean
+     */
+    private function has_at_risk_passport($group_id, $departure_date)
+    {
+        $this->db->where('group_id', $group_id);
+        $this->db->where('passport_expiry IS NOT NULL');
+        $members = $this->db->get(db_prefix() . 'travel_group_members')->result_array();
+
+        foreach ($members as $member) {
+            if (travel_agency_passport_expiry_warning_class($member['passport_expiry'], $departure_date) !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -187,61 +215,79 @@ class Travel_groups_model extends App_Model
      */
     private function sync_calendar_event($group_id)
     {
-        $group = $this->get($group_id);
+        // The read-check-insert-writeback sequence below is not atomic on its own - two staff
+        // members saving the same group at nearly the same moment (realistic here, since the
+        // group form's "Edit Details" and itinerary/transport sections post separately to the
+        // same action) could otherwise both see calendar_event_id == 0 and both insert a new
+        // tblevents row, leaving a duplicate, permanently-orphaned event behind. Scoped to this
+        // group id only, same GET_LOCK/RELEASE_LOCK pattern already used for seat allocation in
+        // add_member() below.
+        $lock_name = 'travel_agency_group_calendar_' . (int) $group_id;
+        $acquired  = $this->db->query('SELECT GET_LOCK(?, 10) AS locked', [$lock_name])->row();
 
-        if (!$group) {
+        if (!$acquired || (int) $acquired->locked !== 1) {
             return;
         }
 
-        if (!$group->departure_date) {
-            if ($group->calendar_event_id) {
-                $this->db->where('eventid', $group->calendar_event_id);
-                $this->db->delete(db_prefix() . 'events');
+        try {
+            $group = $this->get($group_id);
 
-                $this->db->where('id', $group_id);
-                $this->db->update(db_prefix() . 'travel_groups', ['calendar_event_id' => 0]);
+            if (!$group) {
+                return;
             }
 
-            return;
-        }
+            if (!$group->departure_date) {
+                if ($group->calendar_event_id) {
+                    $this->db->where('eventid', $group->calendar_event_id);
+                    $this->db->delete(db_prefix() . 'events');
 
-        $title = $group->name;
-
-        if (!empty($group->package_destination)) {
-            $title .= ' - ' . $group->package_destination;
-        }
-
-        $event_data = [
-            'title'       => $title,
-            'description' => nl2br(_l('travel_agency_group_calendar_event_description', [format_travel_group_status($group->status)])),
-            'start'       => $group->departure_date . ' 00:00:00',
-            'end'         => ($group->return_date ?: $group->departure_date) . ' 23:59:59',
-            'public'      => 1,
-        ];
-
-        if ($group->calendar_event_id) {
-            $this->db->where('eventid', $group->calendar_event_id);
-            $exists = $this->db->get(db_prefix() . 'events')->row();
-
-            if ($exists) {
-                $this->db->where('eventid', $group->calendar_event_id);
-                $this->db->update(db_prefix() . 'events', $event_data);
+                    $this->db->where('id', $group_id);
+                    $this->db->update(db_prefix() . 'travel_groups', ['calendar_event_id' => 0]);
+                }
 
                 return;
             }
-        }
 
-        // No linked event yet (new group, or the event was manually deleted from the calendar
-        // since) - create one and store its id back onto the group row.
-        $event_data['userid'] = get_staff_user_id() ?: $group->addedfrom;
-        $event_data['color']  = '#3a87ad';
+            $title = $group->name;
 
-        $this->db->insert(db_prefix() . 'events', $event_data);
-        $event_id = $this->db->insert_id();
+            if (!empty($group->package_destination)) {
+                $title .= ' - ' . $group->package_destination;
+            }
 
-        if ($event_id) {
-            $this->db->where('id', $group_id);
-            $this->db->update(db_prefix() . 'travel_groups', ['calendar_event_id' => $event_id]);
+            $event_data = [
+                'title'       => $title,
+                'description' => nl2br(_l('travel_agency_group_calendar_event_description', [format_travel_group_status($group->status)])),
+                'start'       => $group->departure_date . ' 00:00:00',
+                'end'         => ($group->return_date ?: $group->departure_date) . ' 23:59:59',
+                'public'      => 1,
+            ];
+
+            if ($group->calendar_event_id) {
+                $this->db->where('eventid', $group->calendar_event_id);
+                $exists = $this->db->get(db_prefix() . 'events')->row();
+
+                if ($exists) {
+                    $this->db->where('eventid', $group->calendar_event_id);
+                    $this->db->update(db_prefix() . 'events', $event_data);
+
+                    return;
+                }
+            }
+
+            // No linked event yet (new group, or the event was manually deleted from the
+            // calendar since) - create one and store its id back onto the group row.
+            $event_data['userid'] = get_staff_user_id() ?: $group->addedfrom;
+            $event_data['color']  = '#3a87ad';
+
+            $this->db->insert(db_prefix() . 'events', $event_data);
+            $event_id = $this->db->insert_id();
+
+            if ($event_id) {
+                $this->db->where('id', $group_id);
+                $this->db->update(db_prefix() . 'travel_groups', ['calendar_event_id' => $event_id]);
+            }
+        } finally {
+            $this->db->query('SELECT RELEASE_LOCK(?)', [$lock_name]);
         }
     }
 
@@ -418,7 +464,10 @@ class Travel_groups_model extends App_Model
             . 'passport.passport_number as passport_number, '
             . 'passport.passport_expiry as passport_expiry, '
             . 'passport.surname as passport_surname, '
-            . 'passport.given_names as passport_given_names'
+            . 'passport.given_names as passport_given_names, '
+            . 'passport.nationality as passport_nationality, '
+            . 'passport.date_of_birth as passport_date_of_birth, '
+            . 'passport.gender as passport_gender'
         )
             ->from(db_prefix() . 'travel_bookings')
             ->join(db_prefix() . 'clients', db_prefix() . 'clients.userid = ' . db_prefix() . 'travel_bookings.clientid', 'left')
@@ -559,6 +608,58 @@ class Travel_groups_model extends App_Model
         $this->db->update(db_prefix() . 'travel_group_members', $data);
 
         return $this->db->affected_rows() > 0;
+    }
+
+    /**
+     * Re-copy passport fields (surname, given names, nationality, DOB, gender, MRZ, passport
+     * number/expiry) from the client's CURRENT passport record onto an existing group member.
+     *
+     * add_member() only copies this data once, at the moment the member is first added - if the
+     * client later renews their passport (uploads a new one via their portal or the admin
+     * client-passport screen), the group roster's snapshot silently goes stale with no
+     * indication anything changed. This lets staff explicitly pull the latest passport data
+     * into an existing roster entry on demand, rather than that mismatch going unnoticed until
+     * someone happens to compare the two records by hand.
+     *
+     * @param  mixed $id        group member id
+     * @param  mixed $group_id  enforced in the WHERE clause, same as update_member()
+     * @return mixed  true on success, or 'no_client_passport'/'invalid_member' on failure
+     */
+    public function refresh_member_from_client_passport($id, $group_id)
+    {
+        $this->db->select(db_prefix() . 'travel_group_members.*, ' . db_prefix() . 'travel_bookings.clientid as clientid')
+            ->from(db_prefix() . 'travel_group_members')
+            ->join(db_prefix() . 'travel_bookings', db_prefix() . 'travel_bookings.id = ' . db_prefix() . 'travel_group_members.booking_id', 'left')
+            ->where(db_prefix() . 'travel_group_members.id', $id)
+            ->where(db_prefix() . 'travel_group_members.group_id', $group_id);
+
+        $member = $this->db->get()->row();
+
+        if (!$member || !$member->clientid) {
+            return 'invalid_member';
+        }
+
+        $this->load->model('travel_agency/travel_client_passports_model');
+        $client_passport = $this->travel_client_passports_model->get_current($member->clientid);
+
+        if (!$client_passport) {
+            return 'no_client_passport';
+        }
+
+        $this->db->where('id', $id);
+        $this->db->where('group_id', $group_id);
+        $this->db->update(db_prefix() . 'travel_group_members', [
+            'passport_number'      => $client_passport['passport_number'],
+            'passport_expiry'      => $client_passport['passport_expiry'],
+            'passport_surname'     => $client_passport['surname'],
+            'passport_given_names' => $client_passport['given_names'],
+            'nationality'          => $client_passport['nationality'],
+            'date_of_birth'        => $client_passport['date_of_birth'],
+            'gender'               => $client_passport['gender'],
+            'passport_mrz_raw'     => $client_passport['mrz_raw'],
+        ]);
+
+        return true;
     }
 
     /**

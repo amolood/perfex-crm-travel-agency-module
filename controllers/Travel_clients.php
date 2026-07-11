@@ -126,7 +126,9 @@ class Travel_clients extends ClientsController
         if ($this->input->post()) {
             $insert_id = $this->travel_client_passports_model->add($clientid, $this->input->post());
 
-            if ($insert_id) {
+            if ($insert_id === 'invalid_passport_number') {
+                set_alert('danger', _l('travel_agency_client_passport_number_required'));
+            } elseif ($insert_id) {
                 if (!empty($_FILES['passport_scan']['name'])) {
                     $this->_handle_passport_scan_upload($insert_id, $clientid);
                 }

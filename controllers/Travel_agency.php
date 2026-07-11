@@ -486,6 +486,25 @@ class Travel_agency extends AdminController
 
         $bookings = $this->travel_groups_model->get_eligible_bookings($group_id, $group->package_id);
 
+        // Passport number/expiry/name are customer PII, not something implied by "can view
+        // travel bookings" - staff without the customers view permission still need the
+        // booking list itself (to pick who to add), just not their passport data riding along
+        // in the same response.
+        if (staff_cant('view', 'customers')) {
+            foreach ($bookings as &$booking) {
+                unset(
+                    $booking['passport_number'],
+                    $booking['passport_expiry'],
+                    $booking['passport_surname'],
+                    $booking['passport_given_names'],
+                    $booking['passport_nationality'],
+                    $booking['passport_date_of_birth'],
+                    $booking['passport_gender']
+                );
+            }
+            unset($booking);
+        }
+
         echo json_encode($bookings);
     }
 
@@ -503,6 +522,26 @@ class Travel_agency extends AdminController
             } else {
                 set_alert('warning', _l('problem_updating', _l('travel_agency_group_member_lowercase')));
             }
+        }
+
+        redirect(admin_url('travel_agency/group/' . $group_id));
+    }
+
+    /* Re-copy passport fields onto an existing group member from the client's CURRENT passport */
+    public function refresh_group_member_passport($id, $group_id)
+    {
+        if (staff_cant('edit', 'travel_agency')) {
+            access_denied('travel_agency');
+        }
+
+        $result = $this->travel_groups_model->refresh_member_from_client_passport($id, $group_id);
+
+        if ($result === true) {
+            set_alert('success', _l('travel_agency_group_member_passport_refreshed'));
+        } elseif ($result === 'no_client_passport') {
+            set_alert('warning', _l('travel_agency_group_member_passport_refresh_no_passport'));
+        } else {
+            set_alert('warning', _l('problem_updating', _l('travel_agency_group_member_lowercase')));
         }
 
         redirect(admin_url('travel_agency/group/' . $group_id));
@@ -836,7 +875,9 @@ class Travel_agency extends AdminController
 
             $insert_id = $this->travel_client_passports_model->add($clientid, $this->input->post());
 
-            if ($insert_id) {
+            if ($insert_id === 'invalid_passport_number') {
+                set_alert('danger', _l('travel_agency_client_passport_number_required'));
+            } elseif ($insert_id) {
                 if (!empty($_FILES['passport_scan']['name'])) {
                     $this->_handle_passport_scan_upload($insert_id, $clientid);
                 }

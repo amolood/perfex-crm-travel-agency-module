@@ -77,6 +77,11 @@ if (!$CI->db->table_exists(db_prefix() . 'travel_bookings')) {
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1');
 }
 
+if (!in_array('deleted_customer_name', $CI->db->list_fields(db_prefix() . 'travel_bookings'))) {
+    $CI->db->query('ALTER TABLE `' . db_prefix() . 'travel_bookings`
+  ADD COLUMN `deleted_customer_name` varchar(191) DEFAULT NULL;');
+}
+
 if (!$CI->db->table_exists(db_prefix() . 'travel_groups')) {
     $CI->db->query('CREATE TABLE `' . db_prefix() . "travel_groups` (
   `id` int(11) NOT NULL,

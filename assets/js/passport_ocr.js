@@ -103,7 +103,42 @@
         });
     }
 
+    /**
+     * Select an MRZ-derived nationality code on a <select>, even when that code isn't one of
+     * the pre-populated country options.
+     *
+     * The nationality dropdown only lists a curated set of countries (see
+     * travel_agency_nationality_names() in travel_agency.php); jQuery's .val() on a <select>
+     * silently selects nothing if the value has no matching <option> - the OCR "success"
+     * message would then claim a confident read while the nationality field quietly reverted
+     * to blank, with no indication anything was lost. This instead adds a fallback option
+     * (labeled with the raw code, since we don't have a name for it) so the value is never
+     * silently dropped, and reports back whether that happened so the caller can warn the user.
+     *
+     * @param  {jQuery} selectEl        the <select> element (native or selectpicker-enhanced)
+     * @param  {string} code            ISO alpha-3 nationality code from the MRZ
+     * @param  {boolean} isSelectpicker whether to call .selectpicker('refresh') after setting
+     * @return {boolean} true if the code matched an existing option, false if a fallback option
+     *                    had to be created
+     */
+    function selectNationality(selectEl, code, isSelectpicker) {
+        var matched = selectEl.find('option[value="' + code + '"]').length > 0;
+
+        if (!matched) {
+            selectEl.append('<option value="' + code + '">' + code + ' (' + code + ')</option>');
+        }
+
+        selectEl.val(code);
+
+        if (isSelectpicker) {
+            selectEl.selectpicker('refresh');
+        }
+
+        return matched;
+    }
+
     window.TravelAgencyPassportOcr = {
         scanPassportFile: scanPassportFile,
+        selectNationality: selectNationality,
     };
 })();
