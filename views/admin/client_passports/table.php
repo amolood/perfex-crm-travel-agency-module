@@ -16,9 +16,15 @@ $join = ['LEFT JOIN ' . db_prefix() . 'travel_client_passports ON ' . db_prefix(
 // Optional ?filter=expiring query param (see manage.php's toggle link) narrows the list down
 // to passports that are expired or expiring within 6 months, instead of staff having to
 // manually scan every row's status badge to spot the ones needing attention.
+//
+// This file is include()'d by App::get_table_data() rather than run as a controller method, so
+// $this is a wrapper object, not the CI superobject directly - $this->input was null here
+// (confirmed live: fataled every load of this table regardless of whether ?filter was even
+// present). The other table.php files in this module reach the real CI instance via $this->ci
+// (e.g. groups/table.php, bookings/table.php) - matching that same established convention here.
 $where = [];
 
-if ($this->input->get('filter') === 'expiring') {
+if ($this->ci->input->get('filter') === 'expiring') {
     $six_months_from_now = date('Y-m-d', strtotime('+6 months'));
     $where[] = "AND " . db_prefix() . "travel_client_passports.passport_expiry IS NOT NULL AND " . db_prefix() . "travel_client_passports.passport_expiry <= '" . $six_months_from_now . "'";
 }
