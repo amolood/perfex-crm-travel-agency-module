@@ -304,6 +304,37 @@ class Travel_agency extends AdminController
         redirect(admin_url('travel_agency/booking/' . $id));
     }
 
+    public function cancel_booking($id)
+    {
+        if (staff_cant('edit', 'travel_agency')) {
+            access_denied('travel_agency');
+        }
+
+        if (!$id) {
+            redirect(admin_url('travel_agency/bookings'));
+        }
+
+        $booking = $this->travel_bookings_model->get($id);
+
+        $success = $this->travel_bookings_model->cancel(
+            $id,
+            $this->input->post('cancellation_reason'),
+            $this->input->post('refund_amount')
+        );
+
+        if ($success === 'reason_required') {
+            set_alert('danger', _l('travel_agency_booking_cancellation_reason_required'));
+        } elseif ($success) {
+            set_alert('success', _l('travel_agency_booking_cancelled_successfully'));
+
+            if ($booking && $booking->invoiceid) {
+                set_alert('warning', _l('travel_agency_booking_cancelled_invoice_reminder'));
+            }
+        }
+
+        redirect(admin_url('travel_agency/booking/' . $id));
+    }
+
     public function delete_booking($id)
     {
         if (staff_cant('delete', 'travel_agency')) {

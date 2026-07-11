@@ -90,6 +90,36 @@
                     </div>
                 </div>
                 <?php echo form_close(); ?>
+
+                <?php if (isset($booking) && (int) $booking->status === TRAVEL_BOOKING_STATUS_CANCELLED) { ?>
+                <div class="panel_s" id="booking-cancellation-details">
+                    <div class="panel-body">
+                        <h4 class="tw-mt-0 tw-font-bold tw-text-base tw-text-neutral-700"><?php echo _l('travel_agency_booking_cancellation_details'); ?></h4>
+                        <p><strong><?php echo _l('travel_agency_booking_cancellation_reason'); ?>:</strong> <?php echo e($booking->cancellation_reason); ?></p>
+                        <?php if ($booking->refund_amount > 0) { ?>
+                        <p><strong><?php echo _l('travel_agency_booking_refund_amount'); ?>:</strong> <?php echo e(app_format_money($booking->refund_amount, get_base_currency())); ?></p>
+                        <?php } ?>
+                        <p class="text-muted"><?php echo _d($booking->cancelled_at); ?></p>
+                        <?php if ($booking->invoiceid) { ?>
+                        <div class="alert alert-warning tw-mt-2">
+                            <?php echo _l('travel_agency_booking_cancelled_invoice_reminder'); ?>
+                            <a href="<?php echo admin_url('invoices/list_invoices/' . $booking->invoiceid); ?>" target="_blank">#<?php echo e($booking->invoiceid); ?></a>
+                        </div>
+                        <?php } ?>
+                    </div>
+                </div>
+                <?php } elseif (isset($booking) && staff_can('edit', 'travel_agency')) { ?>
+                <div class="panel_s" id="booking-cancel">
+                    <div class="panel-body">
+                        <h4 class="tw-mt-0 tw-font-bold tw-text-base tw-text-neutral-700"><?php echo _l('travel_agency_booking_cancel'); ?></h4>
+                        <?php echo form_open(admin_url('travel_agency/cancel_booking/' . $booking->id), ['id' => 'booking-cancel-form']); ?>
+                        <?php echo render_textarea('cancellation_reason', 'travel_agency_booking_cancellation_reason'); ?>
+                        <?php echo render_input('refund_amount', 'travel_agency_booking_refund_amount', '0.00', 'number', ['step' => '0.01', 'min' => '0']); ?>
+                        <button type="submit" class="btn btn-danger"><?php echo _l('travel_agency_booking_cancel'); ?></button>
+                        <?php echo form_close(); ?>
+                    </div>
+                </div>
+                <?php } ?>
             </div>
         </div>
     </div>
@@ -134,6 +164,16 @@ $(function() {
     <?php } ?>
 
     appValidateForm($('form'), validationRules);
+
+    appValidateForm($('#booking-cancel-form'), {
+        cancellation_reason: 'required',
+    });
+
+    $('#booking-cancel-form').on('submit', function(e) {
+        if (!confirm('<?php echo _l('travel_agency_booking_cancel_confirm'); ?>')) {
+            e.preventDefault();
+        }
+    });
 });
 </script>
 </body>

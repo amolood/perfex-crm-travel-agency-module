@@ -318,6 +318,45 @@ class Travel_bookings_model extends App_Model
     }
 
     /**
+     * Cancel a booking with a reason and optional refund amount. Frees up the seats the same
+     * way update_status() does; the linked invoice (if any) is left untouched on purpose - the
+     * refund/credit note is handled manually by staff in Perfex's own invoice screen.
+     * @param  mixed  $id
+     * @param  string $reason
+     * @param  float  $refund_amount
+     * @return mixed  true, false, or 'reason_required' if no reason was given
+     */
+    public function cancel($id, $reason, $refund_amount = 0)
+    {
+        $booking = $this->get($id);
+
+        if (!$booking) {
+            return false;
+        }
+
+        if (trim($reason) === '') {
+            return 'reason_required';
+        }
+
+        $this->db->where('id', $id);
+        $this->db->update(db_prefix() . 'travel_bookings', [
+            'status'              => TRAVEL_BOOKING_STATUS_CANCELLED,
+            'cancellation_reason' => $reason,
+            'refund_amount'       => (float) $refund_amount,
+            'cancelled_at'        => date('Y-m-d H:i:s'),
+            'cancelled_by'        => get_staff_user_id(),
+        ]);
+
+        if ($this->db->affected_rows() > 0) {
+            log_activity('Travel Booking Cancelled [ID:' . $id . ']');
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Delete booking
      * @param  mixed $id
      * @return boolean
