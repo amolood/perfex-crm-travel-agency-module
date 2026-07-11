@@ -148,6 +148,14 @@ class Travel_clients extends ClientsController
         }
 
         if (isset($_FILES['document']['name']) && $_FILES['document']['name'] != '') {
+            // A file exceeding upload_max_filesize/post_max_size never reaches the app at all -
+            // PHP populates $_FILES with an error code instead of a usable tmp_name, so this must
+            // be checked before anything else or the rest of this block silently no-ops.
+            if ($_FILES['document']['error'] !== UPLOAD_ERR_OK) {
+                set_alert('warning', _l('file_too_big'));
+                redirect(site_url('travel_agency/itinerary/' . $id));
+            }
+
             $allowed_extensions = ['jpg', 'jpeg', 'png', 'pdf'];
             $extension          = strtolower(pathinfo($_FILES['document']['name'], PATHINFO_EXTENSION));
 
@@ -189,9 +197,13 @@ class Travel_clients extends ClientsController
                             'notes'         => $this->input->post('notes'),
                         ]);
                         set_alert('success', _l('travel_agency_document_uploaded'));
+                    } else {
+                        set_alert('warning', _l('travel_agency_document_upload_failed'));
                     }
-                } else {
+                } elseif (!$isValid) {
                     set_alert('warning', _l('file_php_extension_blocked'));
+                } else {
+                    set_alert('warning', _l('file_too_big'));
                 }
             } else {
                 set_alert('warning', _l('file_php_extension_blocked'));

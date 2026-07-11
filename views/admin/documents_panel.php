@@ -22,6 +22,7 @@
                 <div class="form-group">
                     <label><?php echo _l('travel_agency_document_file'); ?></label>
                     <input type="file" name="document" accept=".jpg,.jpeg,.png,.pdf" required>
+                    <p class="help-block tw-mb-0"><?php echo _l('travel_agency_document_size_hint'); ?></p>
                 </div>
             </div>
             <div class="col-md-5">
