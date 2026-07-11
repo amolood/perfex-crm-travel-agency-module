@@ -470,7 +470,30 @@ class Travel_agency extends AdminController
         redirect($redirect_url);
     }
 
+    /* Serve a document inline (for the lightbox preview) */
     public function view_document($id)
+    {
+        if (staff_cant('view', 'travel_agency')) {
+            access_denied('travel_agency');
+        }
+
+        $document = $this->travel_documents_model->get($id);
+
+        if (!$document) {
+            show_404();
+        }
+
+        $path = travel_agency_document_upload_path($document->rel_type, $document->rel_id) . $document->filename;
+
+        if (!file_exists($path)) {
+            show_404();
+        }
+
+        travel_agency_serve_file_inline($path);
+    }
+
+    /* Force-download a document (the lightbox's own download button) */
+    public function download_document($id)
     {
         if (staff_cant('view', 'travel_agency')) {
             access_denied('travel_agency');

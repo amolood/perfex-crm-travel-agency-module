@@ -48,13 +48,25 @@
             </thead>
             <tbody>
                 <?php foreach ($documents as $doc) { ?>
+                <?php
+                $view_url     = admin_url('travel_agency/view_document/' . $doc['id']);
+                $download_url = admin_url('travel_agency/download_document/' . $doc['id']);
+                $is_image     = preg_match('/\.(jpe?g|png)$/i', $doc['original_name']);
+                ?>
                 <tr>
                     <td><?php echo e(_l('travel_agency_document_type_' . $doc['document_type'])); ?></td>
-                    <td><a href="<?php echo admin_url('travel_agency/view_document/' . $doc['id']); ?>" target="_blank"><?php echo e($doc['original_name']); ?></a></td>
+                    <td>
+                        <?php if ($is_image) { ?>
+                        <a href="<?php echo $view_url; ?>" data-lightbox="travel-document-<?php echo e($doc['id']); ?>"><?php echo e($doc['original_name']); ?></a>
+                        <?php } else { ?>
+                        <a href="<?php echo $view_url; ?>" target="_blank"><?php echo e($doc['original_name']); ?></a>
+                        <?php } ?>
+                    </td>
                     <td><?php echo e($doc['notes']); ?></td>
                     <td class="text-right">
+                        <a href="<?php echo $download_url; ?>"><?php echo _l('download'); ?></a>
                         <?php if (staff_can('edit', 'travel_agency')) { ?>
-                        <a href="<?php echo admin_url('travel_agency/delete_document/' . $doc['id']); ?>" class="text-danger _delete"><?php echo _l('delete'); ?></a>
+                        | <a href="<?php echo admin_url('travel_agency/delete_document/' . $doc['id']); ?>" class="text-danger _delete"><?php echo _l('delete'); ?></a>
                         <?php } ?>
                     </td>
                 </tr>
