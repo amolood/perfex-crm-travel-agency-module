@@ -357,6 +357,12 @@
                     </div>
                 </div>
                 <?php } ?>
+
+                <?php
+                $document_rel_type = 'group';
+                $document_rel_id   = $group->id;
+                $this->load->view('admin/documents_panel', ['documents' => $documents, 'document_rel_type' => $document_rel_type, 'document_rel_id' => $document_rel_id]);
+                ?>
                 <?php } ?>
             </div>
         </div>

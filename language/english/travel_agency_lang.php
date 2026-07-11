@@ -202,6 +202,22 @@ $lang['travel_agency_reports_margin']             = 'Margin';
 $lang['travel_agency_reports_supplier_summary']   = 'Supplier Cost vs. Payments';
 $lang['travel_agency_reports_no_data']            = 'No data available yet';
 
+/* Documents */
+$lang['travel_agency_documents']              = 'Documents';
+$lang['travel_agency_document_type']          = 'Type';
+$lang['travel_agency_document_file']          = 'File';
+$lang['travel_agency_document_notes']         = 'Notes';
+$lang['travel_agency_document_upload']        = 'Upload';
+$lang['travel_agency_document_none']          = 'No documents uploaded yet';
+$lang['travel_agency_document_uploaded']      = 'Document uploaded successfully';
+$lang['travel_agency_document_deleted']       = 'Document deleted successfully';
+$lang['travel_agency_document_lowercase']     = 'document';
+$lang['travel_agency_document_type_visa']     = 'Visa Copy';
+$lang['travel_agency_document_type_ticket']   = 'E-Ticket';
+$lang['travel_agency_document_type_voucher']  = 'Hotel Voucher';
+$lang['travel_agency_document_type_contract'] = 'Contract';
+$lang['travel_agency_document_type_other']    = 'Other';
+
 /* Notifications */
 $lang['travel_agency_notification_at_risk_passport']     = 'A traveler in group "%s" has an expired or soon-to-expire passport';
 $lang['travel_agency_notification_upcoming_departure']    = 'Group "%s" departs on %s - final checks due';

@@ -15,6 +15,7 @@ class Travel_agency extends AdminController
         $this->load->model('travel_agency/travel_supplier_payments_model');
         $this->load->model('travel_agency/travel_client_passports_model');
         $this->load->model('travel_agency/travel_reports_model');
+        $this->load->model('travel_agency/travel_documents_model');
         $this->load->model('currencies_model');
     }
 
@@ -268,6 +269,8 @@ class Travel_agency extends AdminController
                 show_404();
             }
 
+            $data['documents'] = $this->travel_documents_model->get_for('booking', $id);
+
             $title = _l('edit', _l('travel_agency_booking_lowercase'));
         }
 
@@ -358,6 +361,152 @@ class Travel_agency extends AdminController
     }
 
     /* ---------------------------------------------------------------- */
+    /* Documents (shared between bookings and groups)                    */
+    /* ---------------------------------------------------------------- */
+
+    /**
+     * Confirm rel_type is valid and the parent (booking/group) exists, returning the redirect
+     * URL for that parent - shared by upload/view/delete so each stays a thin wrapper.
+     * @param  string $rel_type
+     * @param  mixed  $rel_id
+     * @return string|false
+     */
+    private function document_parent_redirect_url($rel_type, $rel_id)
+    {
+        if ($rel_type === 'booking') {
+            $exists = $this->travel_bookings_model->get($rel_id);
+
+            return $exists ? admin_url('travel_agency/booking/' . $rel_id) : false;
+        }
+
+        if ($rel_type === 'group') {
+            $exists = $this->travel_groups_model->get($rel_id);
+
+            return $exists ? admin_url('travel_agency/group/' . $rel_id) : false;
+        }
+
+        return false;
+    }
+
+    public function upload_document($rel_type, $rel_id)
+    {
+        if (staff_cant('edit', 'travel_agency')) {
+            access_denied('travel_agency');
+        }
+
+        $redirect_url = $this->document_parent_redirect_url($rel_type, $rel_id);
+
+        if (!$redirect_url) {
+            show_404();
+        }
+
+        if (isset($_FILES['document']['name']) && $_FILES['document']['name'] != '') {
+            $allowed_extensions = ['jpg', 'jpeg', 'png', 'pdf'];
+            $extension          = strtolower(pathinfo($_FILES['document']['name'], PATHINFO_EXTENSION));
+
+            if (!in_array($extension, $allowed_extensions)) {
+                set_alert('warning', _l('file_php_extension_blocked'));
+                redirect($redirect_url);
+            }
+
+            $tmpPath = $_FILES['document']['tmp_name'];
+            $isValid = false;
+
+            if (in_array($extension, ['jpg', 'jpeg', 'png'])) {
+                $imageInfo = @getimagesize($tmpPath);
+                $isValid   = $imageInfo !== false && in_array($imageInfo[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG]);
+            } elseif ($extension === 'pdf') {
+                $handle = @fopen($tmpPath, 'rb');
+                $header = $handle ? fread($handle, 5) : '';
+                if ($handle) {
+                    fclose($handle);
+                }
+                $isValid = $header === '%PDF-';
+            }
+
+            if (!$isValid) {
+                set_alert('warning', _l('file_php_extension_blocked'));
+                redirect($redirect_url);
+            }
+
+            $max_size_bytes = 8 * 1024 * 1024;
+
+            if ($_FILES['document']['size'] > $max_size_bytes) {
+                set_alert('warning', _l('file_too_big'));
+                redirect($redirect_url);
+            }
+
+            travel_agency_secure_uploads_folder(TRAVEL_DOCUMENTS_UPLOADS_FOLDER);
+
+            $path = travel_agency_document_upload_path($rel_type, $rel_id);
+            _maybe_create_upload_path($path);
+
+            $filename    = unique_filename($path, $_FILES['document']['name']);
+            $newFilePath = $path . $filename;
+
+            if (move_uploaded_file($tmpPath, $newFilePath)) {
+                $this->travel_documents_model->add([
+                    'rel_type'      => $rel_type,
+                    'rel_id'        => $rel_id,
+                    'document_type' => $this->input->post('document_type'),
+                    'original_name' => $_FILES['document']['name'],
+                    'filename'      => $filename,
+                    'notes'         => $this->input->post('notes'),
+                ]);
+                set_alert('success', _l('travel_agency_document_uploaded'));
+            }
+        }
+
+        redirect($redirect_url);
+    }
+
+    public function view_document($id)
+    {
+        if (staff_cant('view', 'travel_agency')) {
+            access_denied('travel_agency');
+        }
+
+        $document = $this->travel_documents_model->get($id);
+
+        if (!$document) {
+            show_404();
+        }
+
+        $path = travel_agency_document_upload_path($document->rel_type, $document->rel_id) . $document->filename;
+
+        if (!file_exists($path)) {
+            show_404();
+        }
+
+        force_download($path, null);
+    }
+
+    public function delete_document($id)
+    {
+        if (staff_cant('edit', 'travel_agency')) {
+            access_denied('travel_agency');
+        }
+
+        $document = $this->travel_documents_model->get($id);
+
+        if (!$document) {
+            show_404();
+        }
+
+        $redirect_url = $this->document_parent_redirect_url($document->rel_type, $document->rel_id);
+
+        $response = $this->travel_documents_model->delete($id);
+
+        if ($response) {
+            set_alert('success', _l('travel_agency_document_deleted'));
+        } else {
+            set_alert('warning', _l('problem_deleting', _l('travel_agency_document_lowercase')));
+        }
+
+        redirect($redirect_url ?: admin_url('travel_agency/bookings'));
+    }
+
+    /* ---------------------------------------------------------------- */
     /* Groups (التفويج)                                                  */
     /* ---------------------------------------------------------------- */
 
@@ -433,6 +582,7 @@ class Travel_agency extends AdminController
             $data['stops']         = $this->travel_groups_model->get_itinerary_stops($id);
             $data['transport']     = $this->travel_groups_model->get_transport($id);
             $data['transfer_groups'] = $this->travel_groups_model->get_other_groups_for_package($id, $data['group']->package_id);
+            $data['documents']     = $this->travel_documents_model->get_for('group', $id);
 
             $title = _l('edit', _l('travel_agency_group_lowercase'));
         }

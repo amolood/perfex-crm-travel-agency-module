@@ -120,6 +120,14 @@
                     </div>
                 </div>
                 <?php } ?>
+
+                <?php if (isset($booking)) { ?>
+                <?php
+                $document_rel_type = 'booking';
+                $document_rel_id   = $booking->id;
+                $this->load->view('admin/documents_panel', ['documents' => $documents, 'document_rel_type' => $document_rel_type, 'document_rel_id' => $document_rel_id]);
+                ?>
+                <?php } ?>
             </div>
         </div>
     </div>

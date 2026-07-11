@@ -320,3 +320,29 @@ if (in_array('address', $CI->db->list_fields(db_prefix() . 'travel_suppliers')))
   DROP COLUMN `city`,
   DROP COLUMN `country`;');
 }
+
+/**
+ * Generic document attachments (visa copies, e-tickets, hotel vouchers, contracts, etc.) linked
+ * to either a booking or a group via rel_type/rel_id, matching the polymorphic pattern already
+ * used by Perfex core's own tblrelated_items rather than adding a separate table per parent type.
+ */
+if (!$CI->db->table_exists(db_prefix() . 'travel_documents')) {
+    $CI->db->query('CREATE TABLE `' . db_prefix() . "travel_documents` (
+  `id` int(11) NOT NULL,
+  `rel_type` varchar(20) NOT NULL,
+  `rel_id` int(11) NOT NULL,
+  `document_type` varchar(50) NOT NULL DEFAULT '',
+  `original_name` varchar(191) NOT NULL DEFAULT '',
+  `filename` varchar(191) NOT NULL DEFAULT '',
+  `notes` text NOT NULL,
+  `datecreated` datetime NOT NULL,
+  `addedfrom` int(11) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=" . $CI->db->char_set . ';');
+
+    $CI->db->query('ALTER TABLE `' . db_prefix() . 'travel_documents`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `rel_type_rel_id` (`rel_type`, `rel_id`);');
+
+    $CI->db->query('ALTER TABLE `' . db_prefix() . 'travel_documents`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1');
+}

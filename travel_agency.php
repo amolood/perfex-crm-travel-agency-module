@@ -31,6 +31,7 @@ define('TRAVEL_VISA_STATUS_REJECTED', 4);
 
 define('TRAVEL_GROUP_MEMBERS_UPLOADS_FOLDER', FCPATH . 'uploads/travel_group_members/');
 define('TRAVEL_CLIENT_PASSPORTS_UPLOADS_FOLDER', FCPATH . 'uploads/travel_client_passports/');
+define('TRAVEL_DOCUMENTS_UPLOADS_FOLDER', FCPATH . 'uploads/travel_documents/');
 
 /**
  * Get the upload folder path for a group member's files (photo/passport scan)
@@ -42,6 +43,19 @@ define('TRAVEL_CLIENT_PASSPORTS_UPLOADS_FOLDER', FCPATH . 'uploads/travel_client
 function travel_agency_group_member_upload_path($member_id)
 {
     return TRAVEL_GROUP_MEMBERS_UPLOADS_FOLDER . $member_id . '/';
+}
+
+/**
+ * Get the upload folder path for documents attached to a booking or a group
+ *
+ * @param  string $rel_type  'booking' or 'group'
+ * @param  mixed  $rel_id
+ *
+ * @return string
+ */
+function travel_agency_document_upload_path($rel_type, $rel_id)
+{
+    return TRAVEL_DOCUMENTS_UPLOADS_FOLDER . $rel_type . '/' . $rel_id . '/';
 }
 
 /**

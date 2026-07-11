@@ -204,6 +204,22 @@ $lang['travel_agency_reports_margin']             = 'الهامش';
 $lang['travel_agency_reports_supplier_summary']   = 'تكلفة الموردين مقابل المدفوعات';
 $lang['travel_agency_reports_no_data']            = 'لا توجد بيانات بعد';
 
+/* المستندات */
+$lang['travel_agency_documents']              = 'المستندات';
+$lang['travel_agency_document_type']          = 'النوع';
+$lang['travel_agency_document_file']          = 'الملف';
+$lang['travel_agency_document_notes']         = 'ملاحظات';
+$lang['travel_agency_document_upload']        = 'رفع';
+$lang['travel_agency_document_none']          = 'لا توجد مستندات مرفوعة بعد';
+$lang['travel_agency_document_uploaded']      = 'تم رفع المستند بنجاح';
+$lang['travel_agency_document_deleted']       = 'تم حذف المستند بنجاح';
+$lang['travel_agency_document_lowercase']     = 'المستند';
+$lang['travel_agency_document_type_visa']     = 'نسخة الفيزا';
+$lang['travel_agency_document_type_ticket']   = 'تذكرة إلكترونية';
+$lang['travel_agency_document_type_voucher']  = 'قسيمة فندق';
+$lang['travel_agency_document_type_contract'] = 'عقد';
+$lang['travel_agency_document_type_other']    = 'أخرى';
+
 /* التنبيهات */
 $lang['travel_agency_notification_at_risk_passport']     = 'أحد المسافرين في مجموعة "%s" لديه جواز سفر منتهي أو قارب على الانتهاء';
 $lang['travel_agency_notification_upcoming_departure']    = 'مجموعة "%s" تسافر بتاريخ %s - يلزم المراجعة النهائية';
