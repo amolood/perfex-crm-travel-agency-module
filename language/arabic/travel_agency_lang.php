@@ -72,6 +72,7 @@ $lang['travel_agency_group_departure_date']         = 'تاريخ المغادر
 $lang['travel_agency_group_return_date']            = 'تاريخ العودة';
 $lang['travel_agency_group_seats_total']            = 'إجمالي المقاعد';
 $lang['travel_agency_group_notes']                  = 'ملاحظات';
+$lang['travel_agency_group_calendar_event_description'] = 'انطلاق فوج سياحي. الحالة: %s';
 
 $lang['travel_agency_group_hotel_section']          = 'برنامج الرحلة والسكن';
 $lang['travel_agency_group_itinerary_hint']         = 'أضف كل مدينة مع عدد الأيام واسم الفندق المستخدم فيها.';

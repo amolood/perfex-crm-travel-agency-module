@@ -106,6 +106,11 @@ if (!$CI->db->table_exists(db_prefix() . 'travel_groups')) {
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1');
 }
 
+if (!in_array('calendar_event_id', $CI->db->list_fields(db_prefix() . 'travel_groups'))) {
+    $CI->db->query('ALTER TABLE `' . db_prefix() . 'travel_groups`
+  ADD COLUMN `calendar_event_id` int(11) NOT NULL DEFAULT \'0\';');
+}
+
 if (!$CI->db->table_exists(db_prefix() . 'travel_group_members')) {
     $CI->db->query('CREATE TABLE `' . db_prefix() . "travel_group_members` (
   `id` int(11) NOT NULL,

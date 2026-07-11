@@ -70,6 +70,7 @@ $lang['travel_agency_group_departure_date']         = 'Departure Date';
 $lang['travel_agency_group_return_date']            = 'Return Date';
 $lang['travel_agency_group_seats_total']            = 'Total Seats';
 $lang['travel_agency_group_notes']                  = 'Notes';
+$lang['travel_agency_group_calendar_event_description'] = 'Travel group departure. Status: %s';
 
 $lang['travel_agency_group_hotel_section']          = 'Itinerary &amp; Accommodation';
 $lang['travel_agency_group_itinerary_hint']         = 'Add each city stop with the number of days and the hotel used there.';

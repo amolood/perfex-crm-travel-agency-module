@@ -99,6 +99,8 @@ class Travel_groups_model extends App_Model
         if ($insert_id) {
             log_activity('New Travel Group Added [ID:' . $insert_id . ']');
 
+            $this->sync_calendar_event($insert_id);
+
             return $insert_id;
         }
 
@@ -119,7 +121,14 @@ class Travel_groups_model extends App_Model
         $this->db->where('id', $id);
         $this->db->update(db_prefix() . 'travel_groups', $data);
 
-        if ($this->db->affected_rows() > 0) {
+        $updated = $this->db->affected_rows() > 0;
+
+        // Keep the calendar event's dates/title in sync even when nothing else about the group
+        // row changed (affected_rows() is 0 if departure/return happen to already match what
+        // was submitted), so re-saving the form always reflects the current state.
+        $this->sync_calendar_event($id);
+
+        if ($updated) {
             log_activity('Travel Group Updated [ID:' . $id . ']');
 
             return true;
@@ -135,6 +144,8 @@ class Travel_groups_model extends App_Model
      */
     public function delete($id)
     {
+        $group = $this->get($id);
+
         $this->db->where('id', $id);
         $this->db->delete(db_prefix() . 'travel_groups');
 
@@ -148,12 +159,90 @@ class Travel_groups_model extends App_Model
             $this->db->where('group_id', $id);
             $this->db->delete(db_prefix() . 'travel_group_transport');
 
+            if ($group && $group->calendar_event_id) {
+                $this->db->where('eventid', $group->calendar_event_id);
+                $this->db->delete(db_prefix() . 'events');
+            }
+
             log_activity('Travel Group Deleted [ID:' . $id . ']');
 
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Create or update the calendar event (tblevents) tied to this group's departure/return
+     * dates, and store its id back onto the group row so future saves update the same event
+     * instead of creating a new one each time.
+     *
+     * A single event spans the whole trip (start = departure_date, end = return_date) rather
+     * than two separate point-in-time events, since that is how a multi-day trip naturally
+     * reads on a calendar. If the group has no departure_date, any previously-linked event is
+     * removed instead - there is nothing meaningful left to show.
+     *
+     * @param  mixed $group_id
+     * @return void
+     */
+    private function sync_calendar_event($group_id)
+    {
+        $group = $this->get($group_id);
+
+        if (!$group) {
+            return;
+        }
+
+        if (!$group->departure_date) {
+            if ($group->calendar_event_id) {
+                $this->db->where('eventid', $group->calendar_event_id);
+                $this->db->delete(db_prefix() . 'events');
+
+                $this->db->where('id', $group_id);
+                $this->db->update(db_prefix() . 'travel_groups', ['calendar_event_id' => 0]);
+            }
+
+            return;
+        }
+
+        $title = $group->name;
+
+        if (!empty($group->package_destination)) {
+            $title .= ' - ' . $group->package_destination;
+        }
+
+        $event_data = [
+            'title'       => $title,
+            'description' => nl2br(_l('travel_agency_group_calendar_event_description', [format_travel_group_status($group->status)])),
+            'start'       => $group->departure_date . ' 00:00:00',
+            'end'         => ($group->return_date ?: $group->departure_date) . ' 23:59:59',
+            'public'      => 1,
+        ];
+
+        if ($group->calendar_event_id) {
+            $this->db->where('eventid', $group->calendar_event_id);
+            $exists = $this->db->get(db_prefix() . 'events')->row();
+
+            if ($exists) {
+                $this->db->where('eventid', $group->calendar_event_id);
+                $this->db->update(db_prefix() . 'events', $event_data);
+
+                return;
+            }
+        }
+
+        // No linked event yet (new group, or the event was manually deleted from the calendar
+        // since) - create one and store its id back onto the group row.
+        $event_data['userid'] = get_staff_user_id() ?: $group->addedfrom;
+        $event_data['color']  = '#3a87ad';
+
+        $this->db->insert(db_prefix() . 'events', $event_data);
+        $event_id = $this->db->insert_id();
+
+        if ($event_id) {
+            $this->db->where('id', $group_id);
+            $this->db->update(db_prefix() . 'travel_groups', ['calendar_event_id' => $event_id]);
+        }
     }
 
     /**
