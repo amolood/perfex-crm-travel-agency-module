@@ -184,6 +184,18 @@ $lang['travel_agency_supplier_payment_invalid_amount'] = 'Payment amount must be
 $lang['travel_agency_supplier_accounts']        = 'Supplier Accounts';
 $lang['travel_agency_suppliers_not_found']      = 'No suppliers found';
 
+/* Reports */
+$lang['travel_agency_reports']                    = 'Reports';
+$lang['travel_agency_reports_monthly_bookings']   = 'Bookings Per Month (Last 12 Months)';
+$lang['travel_agency_reports_bookings_count']     = 'Bookings';
+$lang['travel_agency_reports_package_revenue']    = 'Revenue & Occupancy by Package';
+$lang['travel_agency_reports_seats_booked']       = 'Seats Booked';
+$lang['travel_agency_reports_occupancy']          = 'Occupancy';
+$lang['travel_agency_reports_revenue']            = 'Revenue';
+$lang['travel_agency_reports_margin']             = 'Margin';
+$lang['travel_agency_reports_supplier_summary']   = 'Supplier Cost vs. Payments';
+$lang['travel_agency_reports_no_data']            = 'No data available yet';
+
 /* Client portal */
 $lang['travel_agency_my_bookings']              = 'My Bookings';
 $lang['travel_agency_no_bookings_found']        = 'No bookings found';

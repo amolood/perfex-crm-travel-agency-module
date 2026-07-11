@@ -350,6 +350,14 @@ function travel_agency_module_init_menu_items()
             'position' => 12,
         ]);
 
+        $CI->app_menu->add_sidebar_children_item('travel_agency', [
+            'slug'     => 'travel_agency-reports',
+            'name'     => _l('travel_agency_reports'),
+            'href'     => admin_url('travel_agency/reports'),
+            'icon'     => 'fa-solid fa-chart-line',
+            'position' => 20,
+        ]);
+
         if (staff_can('view', 'customers')) {
             $CI->app_menu->add_sidebar_children_item('travel_agency', [
                 'slug'     => 'travel_agency-client-passports',

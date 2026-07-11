@@ -14,6 +14,7 @@ class Travel_agency extends AdminController
         $this->load->model('travel_agency/travel_package_types_model');
         $this->load->model('travel_agency/travel_supplier_payments_model');
         $this->load->model('travel_agency/travel_client_passports_model');
+        $this->load->model('travel_agency/travel_reports_model');
         $this->load->model('currencies_model');
     }
 
@@ -733,6 +734,24 @@ class Travel_agency extends AdminController
         $data['title']          = _l('travel_agency_suppliers');
         $data['supplier_types'] = $this->travel_suppliers_model->get_distinct_types();
         $this->load->view('admin/suppliers/manage', $data);
+    }
+
+    public function reports()
+    {
+        if (staff_cant('view', 'travel_agency')) {
+            access_denied('travel_agency');
+        }
+
+        $data['package_revenue']  = $this->travel_reports_model->get_package_revenue();
+        $data['monthly_bookings'] = $this->travel_reports_model->get_monthly_bookings(12);
+        $data['supplier_summary'] = [];
+
+        if (staff_can('view', 'travel_agency_suppliers')) {
+            $data['supplier_summary'] = $this->travel_reports_model->get_supplier_summary();
+        }
+
+        $data['title'] = _l('travel_agency_reports');
+        $this->load->view('admin/reports/index', $data);
     }
 
     public function supplier_accounts()
