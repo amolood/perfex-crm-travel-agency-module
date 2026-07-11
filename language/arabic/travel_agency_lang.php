@@ -198,6 +198,11 @@ $lang['travel_agency_reports_margin']             = 'الهامش';
 $lang['travel_agency_reports_supplier_summary']   = 'تكلفة الموردين مقابل المدفوعات';
 $lang['travel_agency_reports_no_data']            = 'لا توجد بيانات بعد';
 
+/* التنبيهات */
+$lang['travel_agency_notification_at_risk_passport']     = 'أحد المسافرين في مجموعة "%s" لديه جواز سفر منتهي أو قارب على الانتهاء';
+$lang['travel_agency_notification_upcoming_departure']    = 'مجموعة "%s" تسافر بتاريخ %s - يلزم المراجعة النهائية';
+$lang['travel_agency_notification_overdue_invoice']       = 'فاتورة الحجز %s متأخرة السداد';
+
 /* Client portal */
 $lang['travel_agency_my_bookings']              = 'حجوزاتي';
 $lang['travel_agency_no_bookings_found']        = 'لا توجد حجوزات';

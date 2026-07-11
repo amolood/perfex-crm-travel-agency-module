@@ -233,6 +233,20 @@ hooks()->add_action('admin_init', 'travel_agency_permissions');
 hooks()->add_action('app_init', 'travel_agency_client_menu_item');
 hooks()->add_filter('get_dashboard_widgets', 'travel_agency_add_dashboard_widget');
 hooks()->add_action('before_client_deleted', 'travel_agency_cleanup_client_data');
+hooks()->add_action('after_cron_run', 'travel_agency_run_daily_notifications');
+
+/**
+ * Fires on every cron run (site cron hits /cron every few minutes) but
+ * Travel_notifications_model::run_daily_checks() guards itself to actually do work at most once
+ * per calendar day, notifying active staff about at-risk passports, near-term departures and
+ * overdue invoices tied to travel bookings.
+ */
+function travel_agency_run_daily_notifications()
+{
+    $CI = &get_instance();
+    $CI->load->model('travel_agency/travel_notifications_model');
+    $CI->travel_notifications_model->run_daily_checks();
+}
 
 /**
  * Fired before a client is deleted from core CRM. Without this, travel_client_passports rows

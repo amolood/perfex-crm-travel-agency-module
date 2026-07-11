@@ -196,6 +196,11 @@ $lang['travel_agency_reports_margin']             = 'Margin';
 $lang['travel_agency_reports_supplier_summary']   = 'Supplier Cost vs. Payments';
 $lang['travel_agency_reports_no_data']            = 'No data available yet';
 
+/* Notifications */
+$lang['travel_agency_notification_at_risk_passport']     = 'A traveler in group "%s" has an expired or soon-to-expire passport';
+$lang['travel_agency_notification_upcoming_departure']    = 'Group "%s" departs on %s - final checks due';
+$lang['travel_agency_notification_overdue_invoice']       = 'Travel booking invoice %s is overdue';
+
 /* Client portal */
 $lang['travel_agency_my_bookings']              = 'My Bookings';
 $lang['travel_agency_no_bookings_found']        = 'No bookings found';
