@@ -64,16 +64,8 @@
                         $selected = (isset($booking) ? $booking->package_id : '');
                         echo render_select('package_id', $packages, ['id', 'name'], 'travel_agency_booking_package', $selected, ['data-none-selected-text' => _l('dropdown_non_selected_tex')]); ?>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <?php $value = (isset($booking) ? $booking->travelers : 1); ?>
-                                <?php echo render_input('travelers', 'travel_agency_booking_travelers', $value, 'number'); ?>
-                            </div>
-                            <div class="col-md-6">
-                                <?php $value = (isset($booking) ? _d($booking->travel_date) : ''); ?>
-                                <?php echo render_date_input('travel_date', 'travel_agency_booking_travel_date', $value); ?>
-                            </div>
-                        </div>
+                        <?php $value = (isset($booking) ? $booking->travelers : 1); ?>
+                        <?php echo render_input('travelers', 'travel_agency_booking_travelers', $value, 'number'); ?>
 
                         <?php if (isset($booking)) { ?>
                         <?php
