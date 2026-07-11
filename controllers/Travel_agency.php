@@ -350,11 +350,22 @@ class Travel_agency extends AdminController
         }
 
         if ($this->input->post()) {
+            // stops/transport are separate child-table rows (travel_group_itinerary_stops /
+            // travel_group_transport), submitted as nested arrays alongside the group's own
+            // fields on the same form - they must never reach travel_groups_model->add()/
+            // update(), which inserts/updates the travel_groups row directly. Passing them
+            // through un-stripped fatals with "Unknown column 'stops' in 'SET'" the moment the
+            // form actually has itinerary/transport rows to submit (previously silent only
+            // because those arrays were empty/absent on essentially every real submission so
+            // far).
+            $group_data = $this->input->post();
+            unset($group_data['stops'], $group_data['transport']);
+
             if ($id == '') {
                 if (staff_cant('create', 'travel_agency')) {
                     access_denied('travel_agency');
                 }
-                $id = $this->travel_groups_model->add($this->input->post());
+                $id = $this->travel_groups_model->add($group_data);
                 if ($id) {
                     $this->travel_groups_model->save_itinerary_stops($id, $this->input->post('stops') ?: []);
                     $this->travel_groups_model->save_transport($id, $this->input->post('transport') ?: []);
@@ -365,7 +376,7 @@ class Travel_agency extends AdminController
                 if (staff_cant('edit', 'travel_agency')) {
                     access_denied('travel_agency');
                 }
-                $success = $this->travel_groups_model->update($this->input->post(), $id);
+                $success = $this->travel_groups_model->update($group_data, $id);
                 $this->travel_groups_model->save_itinerary_stops($id, $this->input->post('stops') ?: []);
                 $this->travel_groups_model->save_transport($id, $this->input->post('transport') ?: []);
                 if ($success) {
